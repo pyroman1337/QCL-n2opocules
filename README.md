@@ -1,3 +1,18 @@
+## Welcome to QCL N2opocules
+
+This is a tools for assessing N2O isotopocule fluxes and quality assurance from QCL data. Its developped by the Sustainable Agroecosystem (SAE) group at ETH Zurich.
+
+Functions available:
+- N2O Flux Chamber Master script (prepare QCL rawdata, offset correction and dilution calibration, flux calculation)
+- Minimal required flux for reliable delta estimates
+
+## Installation
+...
+
+## References 
+...
+
+
 ## Welcome to GitHub Pages
 
 You can use the [editor on GitHub](https://github.com/pyroman1337/QCL-n2opocules/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
