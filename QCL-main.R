@@ -6,6 +6,8 @@
 
 # libraries to include
 library(nlme)   # package for function lmList
+library(data.table)  # data table functions (largely compatible with R-base dataframes)
+library(lubridate)   # round date vector in order to average the data vector
 
 # GLOBAL PARAMs
 #  ==============================================================================================================================================================================================================================================
@@ -25,7 +27,8 @@ dream3      <- rgb(140,131,3, maxColorValue = 255)
 dream4      <- rgb(89,43,2, maxColorValue =   255)
 dream5      <- rgb(217,130,54, maxColorValue =255)
 
-# FUNCTIONS TO REMOVE DATA AT START AND END AND THEN APPLY MEAN OR SD         
+# FUNCTIONS TO REMOVE DATA AT START AND END AND THEN APPLY MEAN OR SD   
+## is this used anywhere? ##
 
 cutMean <-  function(x, start, end, ...) {
 return(mean(x[start:(length(x)-end)], ...))
@@ -61,8 +64,6 @@ return(sum(x[start:(length(x)-end)], ...))
  V.SMOW <- 0.0020052 # Isotope ratio of V-SMOW from Werner & Brandt 2001
 
 
-
- 
  ETHZSAEHIGH1.d15Na <-  0.00 #plusminus 0.32
  ETHZSAEHIGH1.d15Nb <-  2.16 #plusminus 0.33
  ETHZSAEHIGH1.d18O  <- 38.98 #plusminus 0.33
@@ -76,10 +77,6 @@ return(sum(x[start:(length(x)-end)], ...))
  ETHZSAEHIGH1.R456  <- (ETHZSAEHIGH1.d15Na/1000 + 1) * AIR.N2 #conversion from d-value to ratio
  ETHZSAEHIGH1.R546  <- (ETHZSAEHIGH1.d15Nb/1000 + 1) * AIR.N2 #conversion from d-value to ratio
  ETHZSAEHIGH1.R448  <- (ETHZSAEHIGH1.d18O/ 1000 + 1) * V.SMOW #conversion from d-value to ratio
-
-
-
-
 
 
 # location.graphs                              <-  "/Users/mbarthel/Desktop/QCL1/graphs/"  
@@ -151,19 +148,13 @@ return(sum(x[start:(length(x)-end)], ...))
                               "statusW","VICI_W","Tlaser1","Vlaser1","LWlaser1","Tlaser2","Vlaser2","LWlaser2","dT1","dT2","X1","pos1","X2","pos2")]
 
         STC$TIMESTAMP     <- ISOdatetime(1904,1,1,0,0,0,tz="UTC") + STC[,"time"] 
-        STC$TIMESTAMP     <- as.POSIXct(strptime(STC$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC"))        
+        STC$TIMESTAMP     <- as.POSIXct(strptime(STC$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC")) 
         rm(QCL.stc)
         
 
 
 
-
-
-
-
         # MERGE DATA FRAMES
-
-
         #FOO  <- merge(STC,TEMPERATURE,by ="TIMESTAMP",all=TRUE, sort=TRUE, incomparables=TRUE)
         QCL  <- merge(STC,STR        ,by ="TIMESTAMP",all=TRUE, sort=TRUE, incomparables=TRUE)
         
@@ -172,11 +163,19 @@ return(sum(x[start:(length(x)-end)], ...))
         rm(STC)
         rm(FOO)
        
+        QCL.backup <- QCL
+        
         # Aggregate the Data in flexible integration time (ideally suggested by the lowest Allan variance)  
-        str(QCL)
-        library(data.table)
+        # str(QCL)
         QCL.dt <- as.data.table(QCL)  
-        QCL.dt[ ]
+        # QCL.dt$agg.unit <- format(QCL.dt$TIMESTAMP,format="%Y-%m-%d %H:%M")
+        QCL.dt$agg.unit <- round_date(QCL.dt$TIMESTAMP, "10 seconds")   # set integration time here
+        QCL.agg <- QCL.dt[, lapply(.SD,mean), by = agg.unit]            # data is averaged over the defined integration time above
+        
+        setnames(QCL.agg, c("agg.unit","TIMESTAMP"), c("TIMESTAMP","TIMESTAMP.mean"))  # replace the aggregated time frame with the original TIMESTAMP vector
+        QCL.agg[,TIMESTAMP := as.POSIXct(strptime(TIMESTAMP,format="%Y-%m-%d %H:%M",tz="UTC"))]
+
+        QCL <- QCL.agg # lets get back to the script
         
         # IMPLEMENT TIME VECTORS
     
@@ -246,7 +245,7 @@ QCLETHZSAEHIGH1.d18O.error   <- sd(QCL$d18O[OFFSET])
 # difference between target and measured value
 diff.d15Na <- ((ETHZSAEHIGH1.d15Na - QCLETHZSAEHIGH1.d15Na)/(QCLETHZSAEHIGH1.d15Na+1000))*1000
 diff.d15Nb <- ((ETHZSAEHIGH1.d15Nb - QCLETHZSAEHIGH1.d15Nb)/(QCLETHZSAEHIGH1.d15Nb+1000))*1000
-diff.d18O  <- ((ETHZSAEHIGH1.d18O  - QCLETHZSAEHIGH1.d18O)/(QCLETHZSAEHIGH1.d18O+1000))*1000
+diff.d18O  <- ((ETHZSAEHIGH1.d18O  - QCLETHZSAEHIGH1.d18O) /(QCLETHZSAEHIGH1.d18O +1000))*1000
 
 
 
@@ -395,7 +394,7 @@ DATA$ch.volumes <- ch.volumes
 
 # ===============================================================================================================================================================================================================================================
 # FLUX CALCULATIONS based on Betsys Excel spreadsheet, but linear regression only
-#NA.RM.3  <-  !is.na(DATA$spec.446a) & !is.na(DATA$VICI) 
+NA.RM.3  <-  !is.na(DATA$spec.446a) & !is.na(DATA$VICI)
 
 # DATA$N2O.nmol[NA.RM.3 & DATA$VICI == 5]       <- 1.00035 * DATA$spec.446a[NA.RM.3 & DATA$VICI == 5]  / (0.08206 * (273.15 + DATA$temp_C1_mod[NA.RM.3 & DATA$VICI  == 5]))  # nmol/L
 # DATA$N2O.nmol[NA.RM.3 & DATA$VICI == 6]       <- 1.00035 * DATA$spec.446a[NA.RM.3 & DATA$VICI == 6]  / (0.08206 * (273.15 + DATA$temp_C2_mod[NA.RM.3 & DATA$VICI  == 6]))  # nmol/L
