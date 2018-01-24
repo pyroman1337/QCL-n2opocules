@@ -1,7 +1,7 @@
 # *****************************************
 # R SCRIPT FOR NITROGEN ISOTOPOMER ANALYSIS
 # M. Barthel |  24 Sep 2015 
-# version: 0.1 
+# version: 0.2
 # adopted for GitHub 10. Jan 2017 (R. Hüppi)
 
 # libraries to include
@@ -14,56 +14,25 @@ library(lubridate)   # round date vector in order to average the data vector
 
   rm(list=ls())
   Sys.setenv(TZ='UTC')
-
-data.folder <- "data/"  # set data folder for QCL rawdata (containing .stc and .str files)
+  lct <- Sys.getlocale("LC_TIME"); Sys.setlocale("LC_TIME", "C")      # sets time settings to english (no confusion with local settings)
   
-  
-kulergrey   <- rgb(64,55,47, maxColorValue =  255)
-kulerorange <- rgb(217,86,28, maxColorValue = 255)
+data.folder <- "data/2015-10/"  # set data folder for QCL rawdata (containing .stc and .str files)
+# data.folder <- "/home/hueppir/DATA-QCL/"  # set data folder for QCL rawdata (containing .stc and .str files)
 
-dream1      <- rgb(64,1,13, maxColorValue =   255)
-dream2      <- rgb(217,4,82, maxColorValue =  255)
-dream3      <- rgb(140,131,3, maxColorValue = 255)
-dream4      <- rgb(89,43,2, maxColorValue =   255)
-dream5      <- rgb(217,130,54, maxColorValue =255)
-
-# FUNCTIONS TO REMOVE DATA AT START AND END AND THEN APPLY MEAN OR SD   
-## is this used anywhere? ##
-
-cutMean <-  function(x, start, end, ...) {
-return(mean(x[start:(length(x)-end)], ...))
-}
-cutSD <- function(x, start, end, ...) {
-return(sd(x[start:(length(x)-end)], ...))
-}
-cutSum <- function(x, start, end, ...) {
-return(sum(x[start:(length(x)-end)], ...))
-}
-
+dream1      = rgb(64,1,13, maxColorValue =   255)
+dream2      = rgb(217,4,82, maxColorValue =  255)  
+# kulergrey   <- rgb(64,55,47, maxColorValue =  255) # remaining example of kuler colours
 
 # TDL Wintel output *.stc and *.str time vector is given in seconds from 01 January 1904; that had been inherited from the IGOR programming language 
 # species 1-5 are measured by Laser 1 (2188 cm-1)
 # species 6-11 are measured by Laser 2 (2202 cm-1)        
   
-# HITRAN ABUNDANCIES FOR N2O Species
-# 446 9.903e-1
-# 456 3.641e-3
-# 546 3.641e-3
-# 448 1.986e-3
-# 447 3.693e-4
-
-# all 9.903e-1+3.641e-3+3.641e-3+1.986e-3+3.693e-4
-# (3.641e-3/9.903e-1)/0.0036782
-
 
 # INTERNATIONAL STANDARDS
-# AIR-N2 0.0036782 Isotope ratio of AIR-N2 from Werner & Brandt 2001
-# V-SMOW 0.0020052 Isotope ratio of V-SMOW from Werner & Brandt 2001
-
  AIR.N2 <- 0.0036782 # Isotope ratio of AIR-N2 from Werner & Brandt 2001
  V.SMOW <- 0.0020052 # Isotope ratio of V-SMOW from Werner & Brandt 2001
 
-
+# SAE ETH Lab standards
  ETHZSAEHIGH1.d15Na <-  0.00 #plusminus 0.32
  ETHZSAEHIGH1.d15Nb <-  2.16 #plusminus 0.33
  ETHZSAEHIGH1.d18O  <- 38.98 #plusminus 0.33
@@ -73,21 +42,9 @@ return(sum(x[start:(length(x)-end)], ...))
  ETHZSAEHIGH7.d18O  <- 37.99 #plusminus 0.35
 
 
-
  ETHZSAEHIGH1.R456  <- (ETHZSAEHIGH1.d15Na/1000 + 1) * AIR.N2 #conversion from d-value to ratio
  ETHZSAEHIGH1.R546  <- (ETHZSAEHIGH1.d15Nb/1000 + 1) * AIR.N2 #conversion from d-value to ratio
  ETHZSAEHIGH1.R448  <- (ETHZSAEHIGH1.d18O/ 1000 + 1) * V.SMOW #conversion from d-value to ratio
-
-
-# location.graphs                              <-  "/Users/mbarthel/Desktop/QCL1/graphs/"  
-# graphname.concentrations.ETHZSAEHIGH1.high   <-  "/Users/mbarthel/Desktop/QCL1/graphs/cal/2015-03-13-ETHZSAEHIGH1-mixhigh-concentrations.png"
-# graphname.deltavalues.ETHZSAEHIGH1.high      <-  "/Users/mbarthel/Desktop/QCL1/graphs/cal/2015-03-13-ETHZSAEHIGH1-mixhigh-delta-values.png"
-#  
-# graphname.concentrations.ethzsaehigh <-  "/Users/mbarthel/Desktop/QCL1/graphs/cal/2015-03-13-ETHZSAEHIGH-concentrations.png"
-# graphname.deltavalues.ethzsaehigh    <-  "/Users/mbarthel/Desktop/QCL1/graphs/cal/2015-03-13-ETHZSAEHIGH-delta-values.png"
-# 
-# graphname.concentrations.dilution <-  "/Users/mbarthel/Desktop/QCL1/graphs/cal/2015-03-13-DILUTION-concentrations.png"
-# graphname.deltavalues.dilution    <-  "/Users/mbarthel/Desktop/QCL1/graphs/cal/2015-03-13-DILUTION-delta-values.png"
 
 
 #  Reads in temperature data, obtained from Rscript 'ibutton.R'
@@ -112,16 +69,27 @@ return(sum(x[start:(length(x)-end)], ...))
  filename.str                   <-  list.files(path = data.folder, pattern="*.str")   # relative Data path from package
 
 
-        STR    <- data.frame(files=NULL, Month=NULL, Gain=NULL , Loss=NULL, sum=NULL, mean=NULL) # creates empty data frame container
+        # STR    <- data.frame(files=NULL, Month=NULL, Gain=NULL , Loss=NULL, sum=NULL, mean=NULL) # creates empty data frame container
         
-        for(i in seq(along=filename.str)) {
-                x <- read.table(paste0(data.folder,filename.str[i]), header=FALSE, skip=1,sep="",fill=TRUE,
-                col.names = c("time","spec.546a","spec.456a","spec.446a","spec.h2oa","spec.co2a","spec.448a","spec.n2o","spec.446b","spec.co2b","spec.CO","spec.h2ob"))
-                STR <- rbind(STR, x) # appends data from new files to data frame 'STR'
-        }
+        # for(i in seq(along=filename.str)) {
+        #         x <- read.table(paste0(data.folder,filename.str[i]), header=FALSE, skip=1,sep="",fill=TRUE,
+        #         col.names = c("time","spec.546a","spec.456a","spec.446a","spec.h2oa","spec.co2a","spec.448a","spec.n2o","spec.446b","spec.co2b","spec.CO","spec.h2ob"))
+        #         STR <- rbind(STR, x) # appends data from new files to data frame 'STR'
+        # }
         
-       STR$TIMESTAMP     <- ISOdatetime(1904,1,1,0,0,0,tz="UTC") + STR[,"time"]
-       STR$TIMESTAMP     <- as.POSIXct(strptime(STR$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC"))           
+      STR     <- fread(paste0(data.folder,filename.str[1]),skip=1,fill=TRUE)
+      
+      for(i in seq(along=filename.str)[-1]) {
+        x <- fread(paste0(data.folder,filename.str[i]), header=F, skip=1,fill=TRUE)
+        STR <- rbind(STR, x) # appends data from new files to data frame 'QCL.stc'
+      }
+      
+      names(STR) <-  c("time","spec.546a","spec.456a","spec.446a","spec.h2oa","spec.co2a","spec.448a","spec.n2o","spec.446b","spec.co2b","spec.CO","spec.h2ob")      
+      
+      STR$TIMESTAMP    <- as_datetime(STR$time, origin = "1904-01-01 UTC")
+                  
+      # system.time(STR$TIMESTAMP     <- ISOdatetime(1904,1,1,0,0,0,tz="UTC") + STR$time  )  #[,"time"]
+      # system.time(STR$TIMESTAMP     <- as.POSIXct(strptime(STR$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC")) )          
 
 #  Reads in all QCL *.stc files and creates a subset data frame
 #  ==============================================================================================================================================================================================================================================      
@@ -130,56 +98,73 @@ return(sum(x[start:(length(x)-end)], ...))
  # setwd(data.location.stc) 
  filename.stc                   <-  list.files(path = data.folder ,pattern="*.stc") # relative Data path from package
     
-  
-  
+
 #  Reads in all QCL *.stc files
 #  ==============================================================================================================================================================================================================================================        
-        QCL.stc    <- data.frame(files=NULL, Month=NULL, Gain=NULL , Loss=NULL, sum=NULL, mean=NULL) # creates empty data frame container
-        
-        for(i in seq(along=filename.stc)) {
-                x <- read.table(paste0(data.folder,filename.stc[i]), header=FALSE, skip=2,sep=",",fill=TRUE,
-                col.names = c("time","rangeF1L1","rangeF1L2","rangeF2L1","rangeF2L2","Pcell","Tcell","Pref","Tref","AD8","AD9","AD10","AD11","AD12","AD13","AD14","AD15",
-                              "statusW","VICI_W","USBByte","NI6024Byte","SPEFile","Tlaser1","Vlaser1","LWlaser1","Tlaser2","Vlaser2","LWlaser2","dT1","dT2","X1","pos1","X2","pos2"))
-                QCL.stc <- rbind(QCL.stc, x) # appends data from new files to data frame 'QCL.stc'
-        }
-        
-        # creates data subset from QCL and removes QCL 
+        # QCL.stc    <- data.frame(files=NULL, Month=NULL, Gain=NULL , Loss=NULL, sum=NULL, mean=NULL) # creates empty data frame container
+ 
+          QCL.stc     <- fread(paste0(data.folder,filename.stc[1]),skip=1,fill=TRUE)
+
+          for(i in seq(along=filename.stc)[-1]) {
+              x <- fread(paste0(data.folder,filename.stc[i]), header=T, skip=1,fill=TRUE)
+              QCL.stc <- rbind(QCL.stc, x) # appends data from new files to data frame 'QCL.stc'
+              }
+
+          names(QCL.stc) <-  c("time","rangeF1L1","rangeF1L2","rangeF2L1","rangeF2L2","Pcell","Tcell","Pref","Tref","AD8","AD9","AD10","AD11","AD12","AD13","AD14","AD15",
+                            "statusW","VICI_W","USBByte","NI6024Byte","SPEFile","Tlaser1","Vlaser1","LWlaser1","Tlaser2","Vlaser2","LWlaser2","dT1","dT2","X1","pos1","X2","pos2")
+
+        # for(i in seq(along=filename.stc)) {
+        #         x <- read.table(paste0(data.folder,filename.stc[i]), header=FALSE, skip=2,sep=",",fill=TRUE,
+        #         col.names = c("time","rangeF1L1","rangeF1L2","rangeF2L1","rangeF2L2","Pcell","Tcell","Pref","Tref","AD8","AD9","AD10","AD11","AD12","AD13","AD14","AD15",
+        #                       "statusW","VICI_W","USBByte","NI6024Byte","SPEFile","Tlaser1","Vlaser1","LWlaser1","Tlaser2","Vlaser2","LWlaser2","dT1","dT2","X1","pos1","X2","pos2"))
+        #         QCL.stc <- rbind(QCL.stc, x) # appends data from new files to data frame 'QCL.stc'
+        # }
+
+        # creates data subset from QCL and removes QCL
         STC <- QCL.stc[,c("time","rangeF1L1","rangeF1L2","rangeF2L1","rangeF2L2","Pcell","Tcell","Pref","Tref","AD8","AD9","AD10","AD11","AD12","AD13","AD14","AD15",
                               "statusW","VICI_W","Tlaser1","Vlaser1","LWlaser1","Tlaser2","Vlaser2","LWlaser2","dT1","dT2","X1","pos1","X2","pos2")]
-
-        STC$TIMESTAMP     <- ISOdatetime(1904,1,1,0,0,0,tz="UTC") + STC[,"time"] 
-        STC$TIMESTAMP     <- as.POSIXct(strptime(STC$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC")) 
-        rm(QCL.stc)
         
-
+        STC$TIMESTAMP     <- as_datetime(STC$time, origin = "1904-01-01 UTC")
+        
+        # STC$TIMESTAMP     <- ISOdatetime(1904,1,1,0,0,0,tz="UTC") +  STC$time   #  [,"time"]
+        # STC$TIMESTAMP     <- as.POSIXct(strptime(STC$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC"))
+        # rm(QCL.stc)
+        
 
 
         # MERGE DATA FRAMES
         #FOO  <- merge(STC,TEMPERATURE,by ="TIMESTAMP",all=TRUE, sort=TRUE, incomparables=TRUE)
         QCL  <- merge(STC,STR        ,by ="TIMESTAMP",all=TRUE, sort=TRUE, incomparables=TRUE)
         
-        rm(TEMPERATURE)
-        rm(STR)
-        rm(STC)
-        rm(FOO)
+        # rm(TEMPERATURE)
+        # rm(STR)
+        # rm(STC)
+        # rm(FOO)
+        # rm(TEMPERATURE,STR,STC,F00,QCL.stc)
        
-        QCL.backup <- QCL
+        QCL.backup    <- QCL
+        # QCL   <-  QCL.backup
         
-        # Aggregate the Data in flexible integration time (ideally suggested by the lowest Allan variance)  
+        
+  # Aggregate the Data in flexible integration time (ideally suggested by the lowest Allan variance)
+  #  ===========================================================================================================================================================================================================
         # str(QCL)
         QCL.dt <- as.data.table(QCL)  
         # QCL.dt$agg.unit <- format(QCL.dt$TIMESTAMP,format="%Y-%m-%d %H:%M")
-        QCL.dt$agg.unit <- round_date(QCL.dt$TIMESTAMP, "10 seconds")   # set integration time here
-        QCL.agg <- QCL.dt[, lapply(.SD,mean), by = agg.unit]            # data is averaged over the defined integration time above
+        QCL.dt$agg.unit   <- round_date(QCL.dt$TIMESTAMP, "12 seconds")   # set integration time here
+        QCL.agg           <- QCL.dt[, lapply(.SD,mean), by = agg.unit]    # data is averaged over the defined integration time above
         
         setnames(QCL.agg, c("agg.unit","TIMESTAMP"), c("TIMESTAMP","TIMESTAMP.mean"))  # replace the aggregated time frame with the original TIMESTAMP vector
-        QCL.agg[,TIMESTAMP := as.POSIXct(strptime(TIMESTAMP,format="%Y-%m-%d %H:%M",tz="UTC"))]
-
+        # system.time(QCL.agg[,TIMESTAMP := as.POSIXct(strptime(TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC"))])
+        
         QCL <- QCL.agg # lets get back to the script
         
-        # IMPLEMENT TIME VECTORS
+       
+        
+         # IMPLEMENT TIME VECTORS
     
         QCL$DOY            <-  as.numeric(format(QCL$TIMESTAMP,format="%j"))
+        # QCL[,DOY :=  as.numeric(format(QCL$TIMESTAMP,format="%j"))]  # datatable pendant
         FOO1               <-  QCL$TIMESTAMP > as.POSIXct("2016-01-01 00:59:59, tz=UTC")
         QCL$DOY[FOO1]      <-  QCL$DOY[FOO1]  + 365           # create continuous DOY value       
 
@@ -195,7 +180,7 @@ return(sum(x[start:(length(x)-end)], ...))
         QCL$timecode       <-  as.numeric(paste(QCL$DOY,QCL$hour,sep = ""))
 
         QCL$ampm           <-  format(QCL$TIMESTAMP,format="%p") # AM/PM indicator
-        QCL$ampmnumeric    <-  numeric(length(QCL[,2]))
+        QCL$ampmnumeric    <-  numeric(length(QCL[,TIMESTAMP]))
         QCL$ampmnumeric[QCL$ampm == "PM"] =  1
         QCL$calcode        <-  as.numeric(paste(QCL$DOY,QCL$ampmnumeric,sep=""))
 
@@ -319,14 +304,12 @@ DATA$d18O.corr1  <- DATA$d18O  + DATA$diff.d18O  + (DATA$d18O  * DATA$diff.d18O 
  DATA$d18O.corr2        <- DATA$slope.d18O  * (DATA$QCLETHZSAEHIGH1.446 - DATA$spec.446a)  +  DATA$d18O.corr1
  
  # validation plot 
- # plot(QCL$TIMESTAMP[DILUTION],QCL$spec.446a[DILUTION])
- plot(QCL$spec.446a[DILUTION],QCL$d15Nb[DILUTION],xlim=c(0,3000),ylim=c(-70,10))
- abline(lm(QCL$d15Nb[DILUTION]~QCL$spec.446a[DILUTION]))
- points(DATA$spec.446a[DILUTION],DATA$d15Nb.corr2[DILUTION],col="red")
- abline(0,0)
+
+ # plot(calcode,offset.d15Nb, ylim = c(-32,-20))  # check the variability of the intercept
+ # plot(calcode,slope.d15Nb, ylim = c(0,0.02))    # check the variability of the slope
+ sd(offset.d15Nb)  # 1 sec => 1.578 ;   1.382   for 10 sec time integration; 30 sec => 2.006       ; 
+ sd(slope.d15Nb)   # 1 sec => 0.001211; 0.001303 for 10 sec time integration 30 sec => 0.001822    ; 
  
- plot(calcode,offset.d15Nb, ylim = c(-32,-20))  # check the variability of the intercept
- plot(calcode,slope.d15Nb, ylim = c(0,0.02))    # check the variability of the slope
  
 # ANCHOR (ETHZSAEHIGH-1) & SPAN (ETHZSAEHIGH-7) TARGET CHECK
 SPAN   <- DATA$VICI == 4 & DATA$hourinseconds > 480 & DATA$TIMESTAMP > as.POSIXct("2015-10-30 00:00:00, tz=UTC")  # 2015-12-05 is the actual starting date
