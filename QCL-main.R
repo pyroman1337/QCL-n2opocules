@@ -375,7 +375,7 @@ NA.RM.4 <- as.vector(NA.RM.4)
 
 
 # In the following respective Keeling plots are done for all chambers
-KEELING <- # NA.RM.4 & 
+KEELING <- NA.RM.4 & 
            QCL.DATA$hourinseconds > 1200 & QCL.DATA$hourinseconds < 3540 & QCL.DATA$VICI > 4 & # start keeling plots 20min into the hour for all VICI ports > 4 (all chambers)
            QCL.DATA$LABEL != "4_PM" & QCL.DATA$LABEL != "5_AM"         # exclude 13C label periods Friday morning
 
