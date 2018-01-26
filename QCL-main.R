@@ -62,19 +62,8 @@ data.folder <- "data/2015-10/"  # set data folder for QCL rawdata (containing .s
 #  the single headers line in the *.str files starts with time stream file was openend in four different formats: (1) local time as timestamp (2) local time in seconds since preceding midnight (3) local time in IGOR time, ie seconds since 1904 (4) UTC time
 
 
- # data.location.str              <-  "/DATA"                # data is placed on desktop
- # setwd(data.location.str) 
  filename.str                   <-  list.files(path = data.folder, pattern="*.str")   # relative Data path from package
 
-
-        # STR    <- data.frame(files=NULL, Month=NULL, Gain=NULL , Loss=NULL, sum=NULL, mean=NULL) # creates empty data frame container
-        
-        # for(i in seq(along=filename.str)) {
-        #         x <- read.table(paste0(data.folder,filename.str[i]), header=FALSE, skip=1,sep="",fill=TRUE,
-        #         col.names = c("time","spec.546a","spec.456a","spec.446a","spec.h2oa","spec.co2a","spec.448a","spec.n2o","spec.446b","spec.co2b","spec.CO","spec.h2ob"))
-        #         STR <- rbind(STR, x) # appends data from new files to data frame 'STR'
-        # }
-        
       STR     <- fread(paste0(data.folder,filename.str[1]),skip=1,fill=TRUE)
       
       for(i in seq(along=filename.str)[-1]) {
@@ -86,21 +75,13 @@ data.folder <- "data/2015-10/"  # set data folder for QCL rawdata (containing .s
       
       STR$TIMESTAMP    <- as_datetime(STR$time, origin = "1904-01-01 UTC")
                   
-      # system.time(STR$TIMESTAMP     <- ISOdatetime(1904,1,1,0,0,0,tz="UTC") + STR$time  )  #[,"time"]
-      # system.time(STR$TIMESTAMP     <- as.POSIXct(strptime(STR$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC")) )          
-
 #  Reads in all QCL *.stc files and creates a subset data frame
 #  ==============================================================================================================================================================================================================================================      
 
- # data.location.stc              <-  "/data"                # data is placed on desktop
- # setwd(data.location.stc) 
  filename.stc                   <-  list.files(path = data.folder ,pattern="*.stc") # relative Data path from package
     
-
 #  Reads in all QCL *.stc files
 #  ==============================================================================================================================================================================================================================================        
-        # QCL.stc    <- data.frame(files=NULL, Month=NULL, Gain=NULL , Loss=NULL, sum=NULL, mean=NULL) # creates empty data frame container
- 
           QCL.stc     <- fread(paste0(data.folder,filename.stc[1]),skip=1,fill=TRUE)
 
           for(i in seq(along=filename.stc)[-1]) {
@@ -111,12 +92,6 @@ data.folder <- "data/2015-10/"  # set data folder for QCL rawdata (containing .s
           names(QCL.stc) <-  c("time","rangeF1L1","rangeF1L2","rangeF2L1","rangeF2L2","Pcell","Tcell","Pref","Tref","AD8","AD9","AD10","AD11","AD12","AD13","AD14","AD15",
                             "statusW","VICI_W","USBByte","NI6024Byte","SPEFile","Tlaser1","Vlaser1","LWlaser1","Tlaser2","Vlaser2","LWlaser2","dT1","dT2","X1","pos1","X2","pos2")
 
-        # for(i in seq(along=filename.stc)) {
-        #         x <- read.table(paste0(data.folder,filename.stc[i]), header=FALSE, skip=2,sep=",",fill=TRUE,
-        #         col.names = c("time","rangeF1L1","rangeF1L2","rangeF2L1","rangeF2L2","Pcell","Tcell","Pref","Tref","AD8","AD9","AD10","AD11","AD12","AD13","AD14","AD15",
-        #                       "statusW","VICI_W","USBByte","NI6024Byte","SPEFile","Tlaser1","Vlaser1","LWlaser1","Tlaser2","Vlaser2","LWlaser2","dT1","dT2","X1","pos1","X2","pos2"))
-        #         QCL.stc <- rbind(QCL.stc, x) # appends data from new files to data frame 'QCL.stc'
-        # }
 
         # creates data subset from QCL and removes QCL
         STC <- QCL.stc[,c("time","rangeF1L1","rangeF1L2","rangeF2L1","rangeF2L2","Pcell","Tcell","Pref","Tref","AD8","AD9","AD10","AD11","AD12","AD13","AD14","AD15",
@@ -124,11 +99,6 @@ data.folder <- "data/2015-10/"  # set data folder for QCL rawdata (containing .s
         
         STC$TIMESTAMP     <- as_datetime(STC$time, origin = "1904-01-01 UTC")
         
-        # STC$TIMESTAMP     <- ISOdatetime(1904,1,1,0,0,0,tz="UTC") +  STC$time   #  [,"time"]
-        # STC$TIMESTAMP     <- as.POSIXct(strptime(STC$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC"))
-        # rm(QCL.stc)
-        
-
 
         # MERGE DATA FRAMES
         #FOO  <- merge(STC,TEMPERATURE,by ="TIMESTAMP",all=TRUE, sort=TRUE, incomparables=TRUE)
@@ -358,7 +328,7 @@ QCL.DATA$ch.volumes <- ch.volumes
 
 
 # ===============================================================================================================================================================================================================================================
-# FLUX CALCULATIONS based on Betsys Excel spreadsheet, but linear regression only
+# FLUX CALCULATIONS (linear regression)
 NA.RM.3  <-  !is.na(QCL.DATA$spec.446a) & !is.na(QCL.DATA$VICI)
 
 # QCL.DATA$N2O.nmol[NA.RM.3 & QCL.DATA$VICI == 5]       <- 1.00035 * QCL.DATA$spec.446a[NA.RM.3 & QCL.DATA$VICI == 5]  / (0.08206 * (273.15 + QCL.DATA$temp_C1_mod[NA.RM.3 & QCL.DATA$VICI  == 5]))  # nmol/L
@@ -398,11 +368,10 @@ QCL.DATA$LABEL         <- paste(QCL.DATA$weekday ,QCL.DATA$ampm,sep = "_")
 QCL.DATA$spec.446a.inv <- 1/ QCL.DATA$spec.446a
 
 
-## outtakes
+## outtakes NA
 NA.RM.4 <- !is.na(QCL.DATA$hourinseconds) & !is.na(QCL.DATA$VICI.time)   & !is.na(QCL.DATA$N2O.nmol)    & !is.na(QCL.DATA$CO2.nmol) & 
            !is.na(QCL.DATA$spec.446a.inv) & !is.na(QCL.DATA$d15Na.corr2) & !is.na(QCL.DATA$d15Nb.corr2) & !is.na(QCL.DATA$d18O.corr2) & !is.na(QCL.DATA$LABEL)
 NA.RM.4 <- as.vector(NA.RM.4)
-
 
 
 # In the following respective Keeling plots are done for all chambers
@@ -421,7 +390,6 @@ KEELING <- as.vector(KEELING)
     flux.time                <-      tapply(QCL.DATA$TIMESTAMP[KEELING],QCL.DATA$VICI.time[KEELING],mean)
     ch.time                  <-      ISOdatetime(1970,1,1,0,0,0) + flux.time    
     port                     <-      tapply(QCL.DATA$VICI[KEELING],QCL.DATA$VICI.time[KEELING],mean)
-    
     
     # Keeling plot for d15Na
     keeling.d15Na            <-      lmList(d15Na.corr2 ~ spec.446a.inv | VICI.time,data = DATA.KEELING.SUBSET)    
@@ -453,7 +421,6 @@ FLUX.N2O    <- NA.RM.4 &
               QCL.DATA$LABEL != "4_PM" & QCL.DATA$LABEL != "5_AM"         # exclude 13C label periods Friday morning
 
 
-
 FLUX.CO2    <- NA.RM.4 & 
               QCL.DATA$hourinseconds >  900 & QCL.DATA$hourinseconds < 2000 & QCL.DATA$VICI > 4 & # start keeling plots 20min into the hour for all VICI ports > 4 (all chambers)
               QCL.DATA$LABEL != "4_PM" & QCL.DATA$LABEL != "5_AM"         # exclude 13C label periods Friday morning
@@ -479,7 +446,6 @@ FLUX.CO2    <- as.vector(FLUX.CO2)
     n2o.flux                 <-      coef(n2o.flux.regression)[,2]  * (volume/(0.235^2*pi))
 
     
-    
    # plot(n2o.flux) # check output
    # plot(co2.flux) # check output
     
@@ -497,29 +463,30 @@ FLUX.CO2    <- as.vector(FLUX.CO2)
     
    
    # FILTERING OF unreasonable CO2 values as general criteria 
-   ch01 = port == 5  & co2.flux <  15000 & co2.flux >  -15000 
-   ch02 = port == 6  & co2.flux <  15000 & co2.flux >  -15000
-   ch03 = port == 7  & co2.flux <  15000 & co2.flux >  -15000
-   ch04 = port == 8  & co2.flux <  15000 & co2.flux >  -15000 
-   ch05 = port == 9  & co2.flux <  15000 & co2.flux >  -15000 
-   ch06 = port == 10 & co2.flux <  15000 & co2.flux >  -15000 
-   ch07 = port == 11 & co2.flux <  15000 & co2.flux >  -15000 
-   ch08 = port == 12 & co2.flux <  15000 & co2.flux >  -15000 
-   ch09 = port == 13 & co2.flux <  15000 & co2.flux >  -15000 
-   ch10 = port == 14 & co2.flux <  15000 & co2.flux >  -15000 
-   ch11 = port == 15 & co2.flux <  15000 & co2.flux >  -15000 
-   ch12 = port == 16 & co2.flux <  15000 & co2.flux >  -15000 
+   ch01 <- port == 5  & co2.flux <  15000 & co2.flux >  -15000 & 
+   ch02 <- port == 6  & co2.flux <  15000 & co2.flux >  -15000
+   ch03 <- port == 7  & co2.flux <  15000 & co2.flux >  -15000
+   ch04 <- port == 8  & co2.flux <  15000 & co2.flux >  -15000 
+   ch05 <- port == 9  & co2.flux <  15000 & co2.flux >  -15000 
+   ch06 <- port == 10 & co2.flux <  15000 & co2.flux >  -15000 
+   ch07 <- port == 11 & co2.flux <  15000 & co2.flux >  -15000 
+   ch08 <- port == 12 & co2.flux <  15000 & co2.flux >  -15000 
+   ch09 <- port == 13 & co2.flux <  15000 & co2.flux >  -15000 
+   ch10 <- port == 14 & co2.flux <  15000 & co2.flux >  -15000 
+   ch11 <- port == 15 & co2.flux <  15000 & co2.flux >  -15000 
+   ch12 <- port == 16 & co2.flux <  15000 & co2.flux >  -15000
    
+  
    
    # CREATE MEAN of all treatments, 200 is common length of each chamber measurement    
    
-   ZINAL  = data.frame(co2.flux[ch01][0:200],co2.flux[ch10][0:200],co2.flux[ch11][0:200]);ZINAL.co2.flux = rowMeans(ZINAL)
-   CLARO  = data.frame(co2.flux[ch03][0:200],co2.flux[ch06][0:200],co2.flux[ch08][0:200]);CLARO.co2.flux = rowMeans(CLARO)
-   PROBUS = data.frame(co2.flux[ch02][0:200],co2.flux[ch05][0:200],co2.flux[ch09][0:200]);PROBUS.co2.flux= rowMeans(PROBUS)
-   MONTE  = data.frame(co2.flux[ch04][0:200],co2.flux[ch07][0:200],co2.flux[ch12][0:200]);MONTE.co2.flux = rowMeans(MONTE)
+   ZINAL  <- data.frame(co2.flux[ch01][0:200],co2.flux[ch10][0:200],co2.flux[ch11][0:200]);ZINAL.co2.flux <- rowMeans(ZINAL)
+   CLARO  <- data.frame(co2.flux[ch03][0:200],co2.flux[ch06][0:200],co2.flux[ch08][0:200]);CLARO.co2.flux <- rowMeans(CLARO)
+   PROBUS <- data.frame(co2.flux[ch02][0:200],co2.flux[ch05][0:200],co2.flux[ch09][0:200]);PROBUS.co2.flux<- rowMeans(PROBUS)
+   MONTE  <- data.frame(co2.flux[ch04][0:200],co2.flux[ch07][0:200],co2.flux[ch12][0:200]);MONTE.co2.flux <- rowMeans(MONTE)
    
    
-   FLUXDATA = data.frame(
+   FLUXDATA <- data.frame(
      ch.time[ch01][0:200],n2o.flux[ch01][0:200],
      ch.time[ch02][0:200],n2o.flux[ch02][0:200],
      ch.time[ch03][0:200],n2o.flux[ch03][0:200],
