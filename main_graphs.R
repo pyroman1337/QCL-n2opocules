@@ -5,7 +5,11 @@
 # version: 0.1 - 24 Jan 2018                #
 # adopted for GitHub XXX 2018 (R. Hüppi)    #
 #############################################
-
+library(nlme)   # package for function lmList
+library(data.table)  # data table functions (largely compatible with R-base dataframes)
+library(lubridate)   # round date vector in order to average the data vector
+library(corrplot)
+library(plotly)
 # introduce Mattis cool colour codes
 kulergrey   = rgb(64,55,47, maxColorValue =  255)
 kulerorange = rgb(217,86,28, maxColorValue = 255)
@@ -45,26 +49,32 @@ par(omi = c(0.5,0,0,0.5))
 par(mai = c(0,1,0.5,0))
 
 
-plot(calcode/10,offset.d15Na,  col = dream2, ylab = expression(delta~"456 intercept"),xaxt="n", xlab = "")  # check the variability of the intercept  parse_date_time(floor(calcode/10),j)  ylim = c(-70,-30),
+plot(calcode/10,offset.d15Na,  col = dream2, ylab = expression(delta~"456 intercept"),xaxt="n", xlab = "", 
+     ylim = c(max(offset.d15Na)*0.8,min(offset.d15Na)*1.2) )  # check the variability of the intercept  parse_date_time(floor(calcode/10),j)  ylim = c(-70,-30),
 # plot(calcode,slope.d15Na, ylim = c(0,0.02))  # check the variability of the slope
-plot(calcode/10,offset.d15Nb, col = dream3, ylab = expression(delta~"546 intercept"),xaxt="n", xlab = "")  # check the variability of the intercept   ylim = c(-35,-15),
+plot(calcode/10,offset.d15Nb, col = dream3, ylab = expression(delta~"546 intercept"),xaxt="n", xlab = "",
+     ylim = c(max(offset.d15Nb)*0.8,min(offset.d15Nb)*1.2) )  # check the variability of the slope 
 
-plot(calcode/10,offset.d18O, col = dream5, ylab = expression(delta~"448 intercept"),xaxt="n", xlab = "")  # check the variability of the intercept   ylim = c(0,60), 
+plot(calcode/10,offset.d18O, col = dream5, ylab = expression(delta~"448 intercept"),xaxt="n", xlab = "",  # check the variability of the intercept   ylim = c(0,60), 
+     ylim = c(max(offset.d18O)*1.2,min(offset.d18O)*0.8) )  
 
 par(mai = c(0.5,1,0,0))
 
-plot(calcode/10,slope.d15Na,  col = dream2, ylab = expression(delta~"456 slope"))  # check the variability of the intercept  ylim = c(-70,-30),
-# plot(calcode,slope.d15Na, ylim = c(0,0.02))  # check the variability of the slope
-plot(calcode/10,slope.d15Nb, col = dream3, ylab = expression(delta~"546 slope"))  # check the variability of the intercept   ylim = c(-35,-15),
-mtext("date [DOI]",1,line=2.2, cex = 1.2)
+plot(calcode/10,slope.d15Na,  col = dream2, ylab = expression(delta~"456 slope"),  # check the variability of the intercept  ylim = c(-70,-30),
+     ylim = c(max(slope.d15Na)*1.2,min(slope.d15Na)*0.8) )  
+plot(calcode/10,slope.d15Nb, col = dream3, ylab = expression(delta~"546 slope"),  # check the variability of the intercept   ylim = c(-35,-15),
+     ylim = c(max(slope.d15Nb)*1.2,min(slope.d15Nb)*0.8) )  
 
-plot(calcode/10,slope.d18O, col = dream5, ylab = expression(delta~"448 slope"))  # check the variability of the intercept   ylim = c(0,60), 
+     mtext("date [DOY]",1,line=2.2, cex = 1.2)
+
+plot(calcode/10,slope.d18O, col = dream5, ylab = expression(delta~"448 slope"),  # check the variability of the intercept   ylim = c(0,60), 
+     ylim = c(max(slope.d18O)*0.8,min(slope.d18O)*1.2) )  
 
 
 par(mai = c(0.25,1,0.25,0))
 
 plot(QCL.DATA$spec.446a[DILUTION], QCL.DATA$d15Na[DILUTION], xlim =c (0,3000), ylim = c(-60,10),
-     xlab = expression("[446] in ppb"), ylab = expression(delta~"546"), col = kulergrey )  # expression(delta^15*"N"^beta)
+     xlab = expression("[446] in ppb"), ylab = expression(delta~"456"), col = kulergrey )  # expression(delta^15*"N"^beta)
 abline(lm(QCL.DATA$d15Na[DILUTION]~QCL.DATA$spec.446a[DILUTION]))
 points(QCL.DATA$spec.446a[DILUTION],QCL.DATA$d15Na.corr2[DILUTION],col=dream2)
 abline(-1.1,0)
@@ -82,7 +92,7 @@ legend("bottomright",c("raw data","dilution correction"),
 mtext(expression("[446] in ppb"),1,line=2.5, cex = 1.2)
 
 plot(QCL.DATA$spec.446a[DILUTION], QCL.DATA$d18O[DILUTION], xlim =c (0,3000),  ylim = c(0,60),
-     xlab = expression("[446] in ppb"), ylab = expression(delta~"546"), col = kulergrey )  # expression(delta^15*"N"^beta)
+     xlab = expression("[446] in ppb"), ylab = expression(delta~"448"), col = kulergrey )  # expression(delta^15*"N"^beta)
 abline(lm(QCL.DATA$d18O[DILUTION]~QCL.DATA$spec.446a[DILUTION]))
 points(QCL.DATA$spec.446a[DILUTION],QCL.DATA$d18O.corr2[DILUTION],col=dream5)
 abline(40.4,0)
@@ -117,10 +127,12 @@ par(mfrow=c(3,1),bg="white",pch=16,tcl=0.3,cex=1,las=0,srt=0,cex.lab=1,xpd=F)
 par(omi = c(0.75,0,0.25,0.25)) # graph margin
 par(mai = c(0,1,0,0))  # plot margin
 
-x.time  <- 288:310   # 274:304  
+# x.time  <- 288:310   # 274:304  
+# x.time  <- min(QCL.DATA$DOY[SPAN]):max(QCL.DATA$DOY[SPAN])
+x.time  <- na.omit(unique(QCL.DATA$DOY[SPAN]))
 
 # d15Na
-plot(x.time,tapply(QCL.DATA$d15Na.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n" ,ylim=c(31,39),
+plot(x.time,tapply(QCL.DATA$d15Na.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", ylim=c(32,38),
      ylab= expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Na, col = dream2)
@@ -140,7 +152,7 @@ legend("topright",c("456"), cex = 1,
        col=c(dream2),pch=16,bty="n")
 
 # d15Nb
-plot(x.time,tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),ylim=c(32,38),col="white",xlab="", xaxt = "n", yaxt = "n",
+plot(x.time,tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", yaxt = "n", ylim=c(32,38),
      ylab = expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Nb, col = dream3)
@@ -160,7 +172,7 @@ legend("topright",c("546"), cex = 1,
        col=c(dream3),pch=16,bty="n")
 
 # d18O
-plot(x.time,tapply(QCL.DATA$d18O.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),ylim=c(28,43),col="white",xlab='time [DOY]',
+plot(x.time,tapply(QCL.DATA$d18O.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab='time [DOY]',  ylim=c(32,40),
      ylab= expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d18O, col = dream5)
@@ -178,9 +190,38 @@ for (i in 1:length(x.time )){
 legend("topright",c("448"), cex = 1, 
        col=c(dream5),pch=16,bty="n")
 
-mtext("date [DOI]",1,line=2.5, cex = 1.2)
+mtext("date [DOY]",1,line=2.5, cex = 1.2)
 
 dev.off()
+
+## fig 2.2
+# 
+# qcl.filter <- QCL %>%  filter(OFFSET)    # %>%  filter(ampmnumeric == 0 )
+# 
+# var.x <- qcl.filter$TIMESTAMP
+# var.y <- qcl.filter$d15Na
+# var.y2 <- qcl.filter$Tcell
+# fit <-  lm(var.y ~ var.x)
+# ay <- list(
+#   tickfont = list(color = "red"),
+#   overlaying = "y",
+#   side = "right",
+#   title = "Cell temperature"
+# )
+# 
+# qcl.filter %>% 
+#   plot_ly() %>% 
+#   # add_markers(x = ~var.x)
+#   add_markers(x = ~var.x, y = ~var.y, name = "d15Na" ) %>% 
+#   add_markers(x = ~var.x, y = ~var.y2, name = "tcell", yaxis = "y2") %>% 
+#   add_lines(x = ~var.x, y = fitted(fit), name = "linear regression")  %>% 
+#   layout(showlegend = TRUE,
+#     xaxis = list(title = "Time"),
+#     yaxis = list(title = "d15Na",
+#     title = "Double Y Axis", 
+#     yaxis2 = ay)
+#   )
+
 
 
 #########################
@@ -193,8 +234,8 @@ par(mfrow=c(3,2))
 par(omi = c(0.7,0,0.5,0.25))
 par(mai = c(0,1,0,0))
 
-chamber2.1 = QCL.DATA$hourinseconds > 900 & QCL.DATA$hourinseconds < 3600 & QCL.DATA$VICI > 4 & QCL.DATA$VICI.time == 2830611 # October 10 chamber 7
-chamber2.2 = QCL.DATA$hourinseconds > 900 & QCL.DATA$hourinseconds < 3600 & QCL.DATA$VICI > 4 & QCL.DATA$VICI.time == 2830611
+chamber2.1 = QCL.DATA$hourinseconds > 900 & QCL.DATA$hourinseconds < 3600 & QCL.DATA$VICI > 4 & QCL.DATA$VICI.time == 2830611 # 2821811 #  October 10 chamber 7
+# chamber2.2 = QCL.DATA$hourinseconds > 900 & QCL.DATA$hourinseconds < 3600 & QCL.DATA$VICI > 4 & QCL.DATA$VICI.time == 2830611
 # concentrations alpha
 ###########################################################################################################
 
@@ -209,9 +250,18 @@ legend("bottomright",c("456","446"), cex = 1.2,
 #points(QCL.DATA$hourinseconds[chamber2.2],QCL.DATA$spec.446a[chamber2.2],col=dream1,cex=.5,ylim=c(300,420))
 #points(QCL.DATA$hourinseconds[chamber2.2],QCL.DATA$spec.456a[chamber2.2],col=dream2,cex=.5,ylim=c(300,420))
 
+### calculate SD for a single flux ###
+# detrend.species <- QCL.DATA$spec.446a[chamber2.1]
+# detrend.stats <- summary( lm(detrend.species ~ QCL.DATA$hourinseconds[chamber2.1]) )
+# detrend.stats$coefficients[2,1]
+# 
+# detrended <- detrend.species - detrend.stats$coefficients[2,1] * QCL.DATA$hourinseconds[chamber2.1]
+# plot(detrended)
+# sd.start <- sd(detrended[1:100])
+# sd.end   <- sd(detrended[150:250])
 
 # keeling plots alpha
-plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Na.corr2[chamber2.1],col="white",cex=.5,ylim=c(-10,40),xlim=c(0.0025,0.00295),xaxt="n",
+plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Na.corr2[chamber2.1],col="white",cex=.5,ylim=c(-10,40),xlim=c(0.00245,0.00295),xaxt="n",
      ylab= expression(delta^15~"N [\u2030]"))    # expression(paste(delta^{15},N[alpha])))
 
 points(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Na.corr2[chamber2.1],col=dream1,cex=.5)
@@ -238,7 +288,7 @@ axis(2, at = seq(320,400,20))
 
 
 # keeling plots beta
-plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Nb.corr2[chamber2.1],col="white",cex=.5,ylim=c(-30,10),xlim=c(0.0025,0.00295),xaxt="n", yaxt = "n",
+plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Nb.corr2[chamber2.1],col="white",cex=.5,ylim=c(-30,10),xlim=c(0.00245,0.00295),xaxt="n", yaxt = "n",
      ylab = expression(delta^15~"N [\u2030]"))
 
 points(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Nb.corr2[chamber2.1],col=dream1,cex=.5)
@@ -267,7 +317,7 @@ legend("bottomright",c("448","446"), cex = 1.2,
 mtext("chamber closure time [s]",1,line=3)
 
 # keeling plots 18O
-plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d18O.corr2[chamber2.1],col="white",cex=.5,ylim=c(-50,100),xlim=c(0.0025,0.00295),
+plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d18O.corr2[chamber2.1],col="white",cex=.5,ylim=c(-50,100),xlim=c(0.00245,0.00295),
      ylab = expression(delta^15~"N [\u2030]"))
 
 points(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d18O.corr2[chamber2.1],col=dream1,cex=.5)
@@ -288,10 +338,10 @@ dev.off()
 pdf("graphs/fig4-1_flux.pdf",encoding="MacRoman",height=3,width=7,family="Times",fonts="Times")
 par(mfrow=c(1,1),bg="white",pch=16,tcl=0.3,cex=0.8,las=0,srt=0,cex.lab=1,xpd=F)
 par(omi = c(0.7,0,0.1,0.1))
-par(mai = c(0,0.5,0.1,0))
+par(mai = c(0,0.75,0.1,0))
 
 plot(ch.time,n2o.flux,
-    ylab=expression("flux N"[2]*"O [nmol m"^{-2}*" s"^{-1}*"]"),xlab='Time',ylim = c(-0.1,1.5),
+    ylab=expression("flux N"[2]*"O [nmol m"^{-2}*" s"^{-1}*"]"),xlab='Time',#ylim = c(-0.1,1.2),
    col=dream1,cex=.5)
 abline(h=0,lty=3)
 
@@ -333,7 +383,7 @@ plot(n2o.flux,coef(keeling.d18O)[,1],
      # ylab=expression(delta~"[per mille]"),
      cex=.5,xlim=c(0,1.1),ylim=c(-1000,1000),col=dream5)
 # rect( 0, -50 ,1.1, 50, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
-legend("topright",c("456"),
+legend("topright",c("448"),
        col=c(dream5),pch=16,bty="n")
 # mtext(side = 2, expression(delta~"[\u2030]"), 2)
 
