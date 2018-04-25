@@ -8,6 +8,8 @@
 library(nlme)   # package for function lmList
 library(data.table)  # data table functions (largely compatible with R-base dataframes)
 library(lubridate)   # round date vector in order to average the data vector
+library(corrplot)
+library(plotly)
 
 # GLOBAL PARAMs
 #  ==============================================================================================================================================================================================================================================
@@ -105,15 +107,12 @@ data.folder <- "data/2015-10/"  # set data folder for QCL rawdata (containing .s
         QCL  <- merge(STC,STR        ,by ="TIMESTAMP",all=TRUE, sort=TRUE, incomparables=TRUE)
         
         # rm(TEMPERATURE)
-        rm(STR)
-        rm(STC)
+        # rm(STR)
+        # rm(STC)
         # rm(FOO)
         # rm(TEMPERATURE,STR,STC,F00,QCL.stc)
-       
-        # QCL.backup    <- QCL
-        # QCL   <-  QCL.backup
         
-        
+   
   # Aggregate the Data in flexible integration time (ideally suggested by the lowest Allan variance)
   #  ===========================================================================================================================================================================================================
         # str(QCL)
@@ -126,10 +125,11 @@ data.folder <- "data/2015-10/"  # set data folder for QCL rawdata (containing .s
         # system.time(QCL.agg[,TIMESTAMP := as.POSIXct(strptime(TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC"))])
         
         QCL <- QCL.agg # lets get back to the script
-        
+      
        
         
-         # IMPLEMENT TIME VECTORS
+  # IMPLEMENT TIME VECTORS
+  #  ===========================================================================================================================================================================================================
     
         QCL$DOY            <-  as.numeric(format(QCL$TIMESTAMP,format="%j"))
         # QCL[,DOY :=  as.numeric(format(QCL$TIMESTAMP,format="%j"))]  # datatable pendant
@@ -151,36 +151,118 @@ data.folder <- "data/2015-10/"  # set data folder for QCL rawdata (containing .s
         QCL$ampmnumeric[QCL$ampm == "PM"] =  1
         QCL$calcode        <-  as.numeric(paste(QCL$DOY,QCL$ampmnumeric,sep=""))
 
+        QCL$VICI  <- QCL$VICI_W + 1 # TDL Wintel is writing VICI multivalve positions from 0 to 15, however, in software used valve numbers are from # 1 to 16        
+        QCL$N     <- !is.na(QCL$spec.446a)  # CREATE LOGICAL VECTOR TO KNOW n of array after aggregation          
 
+        
+   #  Create Selections and Filter from the complete dataset 
+   #  ===========================================================================================================================================================================================================
+        
+        NA.RM.1  <- !is.na(QCL$calcode) & !is.na(QCL$spec.446a) & # !is.na(QCL$spec.546a) & !is.na(QCL$spec.456a) & #  & !is.na(QCL$d15Na)    & !is.na(QCL$d15Nb) & !is.na(QCL$d18O) &
+          QCL$calcode != c(2740) & QCL$calcode != 2750 # take out certain dates where the dilution cal didn't work
+        
+        
+        # OFFSET CORRECTION USING ETHZSAEHIGH1 at VICI port #3
+        OFFSET <- NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 3 |  # last minute of cal cycle at VICI#3 before dilution starts, 
+          NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 15
+        
+        
+        # Parameter diagnostics
+        
+        # QCL.backup    <- QCL
+        # QCL   <-  QCL.backup
+        # head(QCL)
+        # cor(QCL[,3:15])
+        
+        
+        qcl.filter <- QCL %>%  filter(OFFSET)
+      
+        var.x <- qcl.filter$Tcell
+        var.y <- qcl.filter$d18O
+        fit <-  lm(var.y~var.x)
+        qcl.filter %>% 
+          plot_ly(x = ~var.x) %>% 
+          add_markers(y = ~var.y ) %>% 
+          add_lines(x = ~var.x, y = fitted(fit))  %>% 
+          layout(showlegend = FALSE)
+        
+        # %>%
+        #   add_text(x =  mean( var.x),text = round(summary(fit)$r.squared,4))
+  
 
-
-QCL$VICI  <- QCL$VICI_W + 1 # TDL Wintel is writing VICI multivalve positions from 0 to 15, however, in software used valve numbers are from # 1 to 16        
-QCL$N     <- !is.na(QCL$spec.446a)  # CREATE LOGICAL VECTOR TO KNOW n of array after aggregation          
-
-# calculate d-values based on QCL mixing ratios and using HITRAN abundancies
-QCL$d15Na <- ((((0.003641 * QCL$spec.456a) / (0.9903 * QCL$spec.446a)) / AIR.N2) - 1) * 1000  # referenced against AIR-N2
-QCL$d15Nb <- ((((0.003641 * QCL$spec.546a) / (0.9903 * QCL$spec.446a)) / AIR.N2) - 1) * 1000  # referenced against AIR-N2
-QCL$d18O  <- ((((0.001986 * QCL$spec.448a) / (0.9903 * QCL$spec.446a)) / V.SMOW) - 1) * 1000  # referenced against V-SMOW
-QCL$bulk  <- (QCL$d15Na + QCL$d15Nb) / 2         # bulk 15N is the average of alpha and beta
-QCL$SP    <-  QCL$d15Na - QCL$d15Nb              # calculate site preference value
-
-
+        # fit2 <- lm( QCL$spec.456a.mtt[OFFSET] ~ QCL$Tcell[OFFSET])
+        # corrplot
+        # write.table(erkan.data, "output/erkan_output.csv", sep = ",")
+        
+        ###  Corelation plot ###
+        # cor.subset <- QCL[OFFSET,.(time =as.numeric(TIMESTAMP), rangeF1L1,rangeF1L2,Pcell,Tcell,Pref,Tref,#AD8,AD9,AD10,AD12,AD13,AD14,AD15,
+        #              Tlaser1,Tlaser2,X1,X2,  # ,Vlaser1 ,Vlaser2
+        #              spec.446a,spec.456a,spec.546a,spec.448a,spec.h2oa,spec.co2a,spec.n2o,
+        #              # d15Na,d15Nb,d18O,  # ratios (can be omited if checked before corection)
+        #              spec.446b,spec.co2b,spec.CO,spec.h2ob)]
+        # cor.matrix <- cor(cor.subset)
+        # 
+        #  cor.mtest <- function(mat, ...) {
+        #   mat <- as.matrix(mat)
+        #   n <- ncol(mat)
+        #   p.mat<- matrix(NA, n, n)
+        #   diag(p.mat) <- 0
+        #   for (i in 1:(n - 1)) {
+        #     for (j in (i + 1):n) {
+        #       tmp <- cor.test(mat[, i], mat[, j], ...)
+        #       p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+        #     }
+        #   }
+        #   colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+        #   p.mat
+        # }
+        #  p.mat <- cor.mtest(cor.subset)
+        #  
+        # corrplot(cor.matrix, method = "number", order="hclust",type="upper",p.mat = p.mat, sig.level = 0.01,  number.cex = 0.75) # , insig = "blank"
+        # 
+        # plot_ly(QCL[OFFSET], x = ~ TIMESTAMP, y = ~ d15Na,type = "scatter", mode = "markers")  #  [OFFSET,.(AD10,spec.456a)]  x = ~ AD10,
+        # fit <-  lm(QCL$AD10[OFFSET]~QCL$spec.456a[OFFSET])
+        # 
+        # qcl.filter <- QCL %>%  filter(OFFSET)
+        # qcl.filter %>% 
+        #   plot_ly(x = ~spec.456a) %>% 
+        #   add_markers(y = ~AD10) %>% 
+        #   add_lines(x = ~spec.456a, y = fitted(fit)) %>%
+        # 
+        # 
+# calculate d-values and ratio based on QCL mixing ratios and using HITRAN abundancies
+# =======================================================================================================================================================================
 # calculate Ratios 
 QCL$R456  <- (0.003641 * QCL$spec.456a)/(0.9903 * QCL$spec.446a)
 QCL$R546  <- (0.003641 * QCL$spec.546a)/(0.9903 * QCL$spec.446a)
 QCL$R448  <- (0.001986 * QCL$spec.448a)/(0.9903 * QCL$spec.446a)
+    
+# delta-values    
+QCL$d15Na <- (QCL$R456 / AIR.N2 - 1) * 1000  # referenced against AIR-N2
+QCL$d15Nb <- (QCL$R546 / AIR.N2 - 1) * 1000  # referenced against AIR-N2
+QCL$d18O  <- (QCL$R448 / V.SMOW - 1) * 1000  # referenced against V-SMOW
 
-
-
-
-# CALIBRATION CALCULATION AND EQUATIONs
+# Parameter corrections
 # =======================================================================================================================================================================
-NA.RM.1  <- !is.na(QCL$calcode) & !is.na(QCL$spec.446a)   & !is.na(QCL$d15Na)    & !is.na(QCL$d15Nb) & !is.na(QCL$d18O)
-  
+## Tcell correction on 456
+QCL[OFFSET,d15Na.orig := d15Na]
+QCL[OFFSET,d15Na := d15Na.orig - (Tcell- mean(Tcell)) * coef(lm(d15Na.orig ~ Tcell))[2]]
+QCL[OFFSET,d15Na := d15Na - (rangeF1L1- mean(rangeF1L1)) * coef(lm(d15Na ~ rangeF1L1))[2]]
+## X1 correction on 546
+QCL[OFFSET,d15Nb.orig := d15Nb]
+QCL[OFFSET,d15Nb := d15Nb.orig - (X1- mean(X1)) * coef(lm(d15Nb.orig ~ X1))[2]]
+## spec.co2b correction on 448
+QCL[OFFSET,d18O.orig := d18O]
+QCL[OFFSET,d18O := d18O.orig - (spec.co2b- mean(spec.co2b)) * coef(lm(d18O.orig ~ spec.co2b))[2]]       
 
-# OFFSET CORRECTION USING ETHZSAEHIGH1 at VICI port #3
-OFFSET <- NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 3 |  # last minute of cal cycle at VICI#3 before dilution starts, 
-         NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 15
+
+# bluk and SP
+QCL$bulk  <- (QCL$d15Na + QCL$d15Nb) / 2         # bulk 15N is the average of alpha and beta
+QCL$SP    <-  QCL$d15Na - QCL$d15Nb              # calculate site preference value
+
+
+
+
 # average of ETHZSAEHIGH1 measurement for each hour
 
 QCLETHZSAEHIGH1.446    <- tapply(QCL$spec.446a[OFFSET],QCL$calcode[OFFSET],mean,na.rm=TRUE) 
@@ -200,6 +282,8 @@ diff.d18O  <- ((ETHZSAEHIGH1.d18O  - QCLETHZSAEHIGH1.d18O) /(QCLETHZSAEHIGH1.d18
 
 
 
+# CALIBRATION CALCULATION AND EQUATIONs
+# =======================================================================================================================================================================
 
 # DILUTION CORRECTION USING ETHZSAEHIGH1 at VICI port #3
 
@@ -463,7 +547,7 @@ FLUX.CO2    <- as.vector(FLUX.CO2)
     
    
    # FILTERING OF unreasonable CO2 values as general criteria 
-   ch01 <- port == 5  & co2.flux <  15000 & co2.flux >  -15000 & 
+   ch01 <- port == 5  & co2.flux <  15000 & co2.flux >  -15000 
    ch02 <- port == 6  & co2.flux <  15000 & co2.flux >  -15000
    ch03 <- port == 7  & co2.flux <  15000 & co2.flux >  -15000
    ch04 <- port == 8  & co2.flux <  15000 & co2.flux >  -15000 
@@ -503,9 +587,10 @@ FLUX.CO2    <- as.vector(FLUX.CO2)
    # head(FLUXDATA)
    
    ### write results to output folder
-   fwrite(QCL.DATA    ,"output/QCL-DATA.csv"    ,sep=",")       # write processed rawdata into output file
-   
-   fwrite(FLUXDATA,"output/FLUXDATA.csv",sep=",")               # write calculated fluxes into output file
-   
-   fwrite(KEELING.RES,"output/KEELING-RESULTS.csv",sep=",")     # write keeling plot results
+   # fwrite(QCL.DATA    ,"output/QCL-DATA.csv"    ,sep=",")       # write processed rawdata into output file
+   # 
+   # fwrite(FLUXDATA,"output/FLUXDATA.csv",sep=",")               # write calculated fluxes into output file
+   # 
+   # fwrite(KEELING.RES,"output/KEELING-RESULTS.csv",sep=",")     # write keeling plot results
     
+   

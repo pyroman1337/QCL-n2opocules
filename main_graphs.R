@@ -112,16 +112,16 @@ dev.off()
 #########################
 # ANCHOR (ETHZSAEHIGH-1) & SPAN (ETHZSAEHIGH-7) TARGET CHECK
 
-pdf("graphs/fig2_anchor-span.pdf",encoding="MacRoman",height=6,width=12,family="Times",fonts="Times")
+pdf("graphs/fig2_anchor-span.pdf",encoding="WinAnsi", height=6,width=12,family="Times",fonts="Times")  # ,encoding="MacRoman"
 par(mfrow=c(3,1),bg="white",pch=16,tcl=0.3,cex=1,las=0,srt=0,cex.lab=1,xpd=F)
 par(omi = c(0.75,0,0.25,0.25)) # graph margin
-par(mai = c(0,0.75,0,0))  # plot margin
+par(mai = c(0,1,0,0))  # plot margin
 
-x.time  <- 274:304   # 274:304  
+x.time  <- 288:310   # 274:304  
 
 # d15Na
-plot(x.time,tapply(QCL.DATA$d15Na.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),ylim=c(32,38),col="white",xlab="", xaxt = "n",
-     ylab= expression(delta~"456 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
+plot(x.time,tapply(QCL.DATA$d15Na.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n" ,ylim=c(31,39),
+     ylab= expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Na, col = dream2)
 rect( min(x.time-10), ETHZSAEHIGH7.d15Na-0.71 ,max(x.time+10),ETHZSAEHIGH7.d15Na+0.71, col = rgb(217,4,82, alpha = 50, maxColorValue =  255), border = F)
@@ -136,14 +136,16 @@ for (i in 1:length(x.time )){
   arrows(x.time[i], mean.d15Na[i] + sd.d15Na[i], x.time[i], mean.d15Na[i] - sd.d15Na[i],
          angle=90, code=3, length=0.03, col=kulergrey, lwd=0.4) # Fehlerbalken 
 }
-
+legend("topright",c("456"), cex = 1, 
+       col=c(dream2),pch=16,bty="n")
 
 # d15Nb
-plot(x.time,tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),ylim=c(34,38),col="white",xlab="", xaxt = "n",
-     ylab = expression(delta~"456 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
+plot(x.time,tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),ylim=c(32,38),col="white",xlab="", xaxt = "n", yaxt = "n",
+     ylab = expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Nb, col = dream3)
 rect( min(x.time-10), ETHZSAEHIGH7.d15Nb-0.5 ,max(x.time+10),ETHZSAEHIGH7.d15Nb+0.5, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
+axis(2, at = seq(33,38,1))
 
 sd.d15Nb   = tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],sd)
 mean.d15Nb = tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],mean)
@@ -154,11 +156,12 @@ for (i in 1:length(x.time )){
   arrows(x.time[i], mean.d15Nb[i] + sd.d15Nb[i], x.time[i], mean.d15Nb[i] - sd.d15Nb[i],
          angle=90, code=3, length=0.03, col=kulergrey, lwd=0.4) # Fehlerbalken 
 }
-
+legend("topright",c("546"), cex = 1, 
+       col=c(dream3),pch=16,bty="n")
 
 # d18O
-plot(x.time,tapply(QCL.DATA$d18O.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),ylim=c(25,43),col="white",xlab='time [DOY]',
-     ylab= expression(delta~"456 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
+plot(x.time,tapply(QCL.DATA$d18O.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),ylim=c(28,43),col="white",xlab='time [DOY]',
+     ylab= expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d18O, col = dream5)
 rect( min(x.time-10), ETHZSAEHIGH7.d18O-0.35 ,max(x.time+10),ETHZSAEHIGH7.d18O+0.35, col = rgb(217,130,54, alpha = 50, maxColorValue =  255), border = F)
@@ -172,6 +175,9 @@ for (i in 1:length(x.time )){
   arrows(x.time[i], mean.d18O[i] + sd.d18O[i], x.time[i], mean.d18O[i] - sd.d18O[i],
          angle=90, code=3, length=0.03, col="grey50", lwd=0.4) # Fehlerbalken 
 }
+legend("topright",c("448"), cex = 1, 
+       col=c(dream5),pch=16,bty="n")
+
 mtext("date [DOI]",1,line=2.5, cex = 1.2)
 
 dev.off()
@@ -182,7 +188,7 @@ dev.off()
 #########################   
 pdf("graphs/fig3_keeling.pdf", width=9, height=8, encoding="WinAnsi")  # WinAnsi   MacRoman
 
-par(bg="white",pch=16,tcl=0.3,cex=0.75,cex.lab=1.5,las=0,srt=0,xpd=FALSE)
+par(bg="white",pch=16,tcl=0.3,cex=0.9,cex.lab=1.5,las=0,srt=0,xpd=FALSE)
 par(mfrow=c(3,2))
 par(omi = c(0.7,0,0.5,0.25))
 par(mai = c(0,1,0,0))
@@ -198,15 +204,15 @@ plot(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.446a[chamber2.1],col="whit
 points(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.446a[chamber2.1],col=dream1,cex=.5,ylim=c(300,420))
 points(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.456a[chamber2.1],col=dream2,cex=.5,ylim=c(300,420))
 
-legend("bottomright",c("456","446"),
+legend("bottomright",c("456","446"), cex = 1.2, 
        col=c(dream2,dream1),pch=16,bty="n")
 #points(QCL.DATA$hourinseconds[chamber2.2],QCL.DATA$spec.446a[chamber2.2],col=dream1,cex=.5,ylim=c(300,420))
 #points(QCL.DATA$hourinseconds[chamber2.2],QCL.DATA$spec.456a[chamber2.2],col=dream2,cex=.5,ylim=c(300,420))
 
 
 # keeling plots alpha
-plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Na.corr2[chamber2.1],col="white",cex=.5,ylim=c(-20,50),xlim=c(0.0025,0.00295),xaxt="n",
-     ylab= expression(delta~"456 [\u2030]"))    # expression(paste(delta^{15},N[alpha])))
+plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Na.corr2[chamber2.1],col="white",cex=.5,ylim=c(-10,40),xlim=c(0.0025,0.00295),xaxt="n",
+     ylab= expression(delta^15~"N [\u2030]"))    # expression(paste(delta^{15},N[alpha])))
 
 points(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Na.corr2[chamber2.1],col=dream1,cex=.5)
 abline(lm(QCL.DATA$d15Na.corr2[chamber2.1]~QCL.DATA$spec.446a.inv[chamber2.1]))
@@ -224,7 +230,7 @@ plot(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.446a[chamber2.1],col="whit
 points(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.446a[chamber2.1],col=dream1,cex=.5,ylim=c(300,420))
 points(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.546a[chamber2.1],col=dream3,cex=.5,ylim=c(300,420))
 
-legend("bottomright",c("546","446"),
+legend("bottomright",c("546","446"),cex = 1.2, 
        col=c(dream3,dream1),pch=16,bty="n")
 axis(2, at = seq(320,400,20))
 #points(QCL.DATA$hourinseconds[chamber2.2],QCL.DATA$spec.446a[chamber2.2],col=dream1,cex=.5,ylim=c(300,420))
@@ -232,11 +238,12 @@ axis(2, at = seq(320,400,20))
 
 
 # keeling plots beta
-plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Nb.corr2[chamber2.1],col="white",cex=.5,ylim=c(-40,15),xlim=c(0.0025,0.00295),xaxt="n",
-     ylab=expression(delta~"546 [\u2030]"))
+plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Nb.corr2[chamber2.1],col="white",cex=.5,ylim=c(-30,10),xlim=c(0.0025,0.00295),xaxt="n", yaxt = "n",
+     ylab = expression(delta^15~"N [\u2030]"))
 
 points(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d15Nb.corr2[chamber2.1],col=dream1,cex=.5)
 abline(lm(QCL.DATA$d15Nb.corr2[chamber2.1]~QCL.DATA$spec.446a.inv[chamber2.1]))
+axis(2, at = seq(-30,10,10))
 
 #points(QCL.DATA$spec.446a.inv[chamber2.2],QCL.DATA$d15Nb.corr2[chamber2.2],col=dream4,cex=.5)
 #abline(lm(QCL.DATA$d15Nb.corr2[chamber2.2]~QCL.DATA$spec.446a.inv[chamber2.2]))
@@ -251,7 +258,7 @@ plot(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.446a[chamber2.1],col="whit
 points(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.446a[chamber2.1],col=dream1,cex=.5,ylim=c(300,420))
 points(QCL.DATA$hourinseconds[chamber2.1],QCL.DATA$spec.448a[chamber2.1],col=dream5,cex=.5,ylim=c(300,420))
 
-legend("bottomright",c("448","446"),
+legend("bottomright",c("448","446"), cex = 1.2, 
        col=c(dream5,dream1),pch=16,bty="n")
 #points(QCL.DATA$hourinseconds[chamber2.2],QCL.DATA$spec.446a[chamber2.2],col=dream1,cex=.5,ylim=c(300,420))
 #points(QCL.DATA$hourinseconds[chamber2.2],QCL.DATA$spec.448a[chamber2.2],col=dream5,cex=.5,ylim=c(300,420))
@@ -260,8 +267,8 @@ legend("bottomright",c("448","446"),
 mtext("chamber closure time [s]",1,line=3)
 
 # keeling plots 18O
-plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d18O.corr2[chamber2.1],col="white",cex=.5,ylim=c(-100,100),xlim=c(0.0025,0.00295),
-     ylab=expression(delta~"448 [\u2030]"))
+plot(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d18O.corr2[chamber2.1],col="white",cex=.5,ylim=c(-50,100),xlim=c(0.0025,0.00295),
+     ylab = expression(delta^15~"N [\u2030]"))
 
 points(QCL.DATA$spec.446a.inv[chamber2.1],QCL.DATA$d18O.corr2[chamber2.1],col=dream1,cex=.5)
 abline(lm(QCL.DATA$d18O.corr2[chamber2.1]~QCL.DATA$spec.446a.inv[chamber2.1]))
@@ -278,7 +285,7 @@ dev.off()
 ### publication Fig 4 ###
 #########################
 
-pdf("graphs/fig4.1_flux.pdf",encoding="MacRoman",height=3,width=7,family="Times",fonts="Times")
+pdf("graphs/fig4-1_flux.pdf",encoding="MacRoman",height=3,width=7,family="Times",fonts="Times")
 par(mfrow=c(1,1),bg="white",pch=16,tcl=0.3,cex=0.8,las=0,srt=0,cex.lab=1,xpd=F)
 par(omi = c(0.7,0,0.1,0.1))
 par(mai = c(0,0.5,0.1,0))
@@ -290,10 +297,10 @@ abline(h=0,lty=3)
 
 dev.off()
 
-pdf("graphs/fig4.2_fluxvsdelta.pdf",encoding="MacRoman",height=4,width=7,family="Times",fonts="Times")
+pdf("graphs/fig4-2_fluxvsdelta.pdf",encoding="WinAnsi",height=4,width=7,family="Times",fonts="Times")
 par(mfrow=c(1,3),bg="white",pch=16,tcl=0.3,cex=1,las=0,srt=0,cex.lab=1,xpd=F)
-par(omi = c(0.7,0,0.09,0.1))
-par(mai = c(0,0.75,0.1,0))
+par(omi = c(0.7,0.5,0.09,0.1))
+par(mai = c(0,0.5,0.1,0))
 
 plot(n2o.flux,coef(keeling.d15Na)[,1],
      xlab=expression("N"[2]*"O flux [nmol m"^{-2}*" s"^{-1}*"]"),
@@ -303,9 +310,10 @@ plot(n2o.flux,coef(keeling.d15Na)[,1],
 # rect( 0, -50 ,1.1, 50, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
 legend("topright",c("456"),
        col=c(dream2),pch=16,bty="n")
-mtext(side = 2, expression(delta~"[\u2030]"), 2)
-
 abline(h=0)
+
+mtext(side = 2, expression(delta^15~"N [\u2030]"), 2.5)
+
 
 plot(n2o.flux,coef(keeling.d15Nb)[,1],
     xlab=expression("N"[2]*"O flux [nmol m"^{-2}*" s"^{-1}*"]"),
