@@ -23,7 +23,16 @@ dream5      = rgb(217,130,54, maxColorValue =255)
 ## read in data from QCL-main.R script
 # FLUXDATA <-  fread("output/FLUXDATA.csv", header=T, sep = ",")
 # QCL.DATA     <-  fread("output/QCL-DATA.csv", header=T, sep = ",")
+# QCL <- QCL.DATA
 # KEELING.RES     <-  fread("output/keeling-results.csv", header=T, sep = ",")
+
+NA.RM.1  <- !is.na(QCL.DATA$calcode) & !is.na(QCL$spec.446a) & # !is.na(QCL$spec.546a) & !is.na(QCL$spec.456a) & #  & !is.na(QCL$d15Na)    & !is.na(QCL$d15Nb) & !is.na(QCL$d18O) &
+  QCL$calcode != c(2740) & QCL$calcode != 2750 # take out certain dates where the dilution cal didn't work
+
+
+# OFFSET CORRECTION USING ETHZSAEHIGH1 at VICI port #3
+OFFSET <- NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 3 |  # last minute of cal cycle at VICI#3 before dilution starts, 
+  NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 15
 
 #selection vectors
 SPAN   <- QCL.DATA$VICI == 4 & QCL.DATA$hourinseconds > 480 & QCL.DATA$TIMESTAMP > as.POSIXct("2015-09-30 00:00:00, tz=UTC")  # 2015-12-05 is the actual starting date
@@ -33,8 +42,7 @@ ANCHOR <- NA.RM.1 & QCL.DATA$VICI == 3 & QCL.DATA$hourinseconds > 250 &  QCL.DAT
 # NA.RM.1  <- !is.na(QCL.DATA$calcode) & !is.na(QCL.DATA$spec.446a)   & !is.na(QCL.DATA$d15Na)    & !is.na(QCL.DATA$d15Nb) & !is.na(QCL.DATA$d18O)
 
 DILUTION <- NA.RM.1 & QCL.DATA$VICI == 3 & QCL.DATA$hourinseconds > 310 & QCL.DATA$hour == 3 | 
-            NA.RM.1 & QCL.DATA$VICI == 3 & QCL.DATA$hourinseconds > 310 & QCL.DATA$hour == 15
-
+            NA.RM.1 & QCL.DATA$VICI == 3 &
 ##############################################################################################################
 
 #########################
@@ -46,32 +54,8 @@ DILUTION <- NA.RM.1 & QCL.DATA$VICI == 3 & QCL.DATA$hourinseconds > 310 & QCL.DA
 pdf("graphs/fig1_dilution.pdf",encoding="MacRoman",height=10,width=12,family="Times",fonts="Times")   
 par(mfrow=c(3,3),bg="white",pch=16,tcl=0.3,cex=1,las=0,srt=0,cex.lab=1*1.3,xpd=FALSE)
 par(omi = c(0.5,0,0,0.5))
-par(mai = c(0,1,0.5,0))
 
-
-plot(calcode/10,offset.d15Na,  col = dream2, ylab = expression(delta~"456 intercept"),xaxt="n", xlab = "", 
-     ylim = c(max(offset.d15Na)*0.8,min(offset.d15Na)*1.2) )  # check the variability of the intercept  parse_date_time(floor(calcode/10),j)  ylim = c(-70,-30),
-# plot(calcode,slope.d15Na, ylim = c(0,0.02))  # check the variability of the slope
-plot(calcode/10,offset.d15Nb, col = dream3, ylab = expression(delta~"546 intercept"),xaxt="n", xlab = "",
-     ylim = c(max(offset.d15Nb)*0.8,min(offset.d15Nb)*1.2) )  # check the variability of the slope 
-
-plot(calcode/10,offset.d18O, col = dream5, ylab = expression(delta~"448 intercept"),xaxt="n", xlab = "",  # check the variability of the intercept   ylim = c(0,60), 
-     ylim = c(max(offset.d18O)*1.2,min(offset.d18O)*0.8) )  
-
-par(mai = c(0.5,1,0,0))
-
-plot(calcode/10,slope.d15Na,  col = dream2, ylab = expression(delta~"456 slope"),  # check the variability of the intercept  ylim = c(-70,-30),
-     ylim = c(max(slope.d15Na)*1.2,min(slope.d15Na)*0.8) )  
-plot(calcode/10,slope.d15Nb, col = dream3, ylab = expression(delta~"546 slope"),  # check the variability of the intercept   ylim = c(-35,-15),
-     ylim = c(max(slope.d15Nb)*1.2,min(slope.d15Nb)*0.8) )  
-
-     mtext("date [DOY]",1,line=2.2, cex = 1.2)
-
-plot(calcode/10,slope.d18O, col = dream5, ylab = expression(delta~"448 slope"),  # check the variability of the intercept   ylim = c(0,60), 
-     ylim = c(max(slope.d18O)*0.8,min(slope.d18O)*1.2) )  
-
-
-par(mai = c(0.25,1,0.25,0))
+par(mai = c(0.5,1,0.25,0))
 
 plot(QCL.DATA$spec.446a[DILUTION], QCL.DATA$d15Na[DILUTION], xlim =c (0,3000), ylim = c(-60,10),
      xlab = expression("[446] in ppb"), ylab = expression(delta~"456"), col = kulergrey )  # expression(delta^15*"N"^beta)
@@ -99,6 +83,32 @@ abline(40.4,0)
 legend("bottomright",c("raw data","dilution correction"),
        col=c(kulergrey,dream5),pch=16,bty="n")
 
+
+par(mai = c(0,1,0.5,0))
+
+
+plot(calcode/10,offset.d15Na,  col = dream2, ylab = expression(delta~"456 intercept"),xaxt="n", xlab = "", 
+     ylim = c(max(offset.d15Na)*0.8,min(offset.d15Na)*1.2) )  # check the variability of the intercept  parse_date_time(floor(calcode/10),j)  ylim = c(-70,-30),
+# plot(calcode,slope.d15Na, ylim = c(0,0.02))  # check the variability of the slope
+plot(calcode/10,offset.d15Nb, col = dream3, ylab = expression(delta~"546 intercept"),xaxt="n", xlab = "",
+     ylim = c(max(offset.d15Nb)*0.8,min(offset.d15Nb)*1.2) )  # check the variability of the slope 
+
+plot(calcode/10,offset.d18O, col = dream5, ylab = expression(delta~"448 intercept"),xaxt="n", xlab = "",  # check the variability of the intercept   ylim = c(0,60), 
+     ylim = c(max(offset.d18O)*1.2,min(offset.d18O)*0.8) )  
+
+par(mai = c(0.5,1,0,0))
+
+plot(calcode/10,slope.d15Na,  col = dream2, ylab = expression(delta~"456 slope"),  # check the variability of the intercept  ylim = c(-70,-30),
+     ylim = c(max(slope.d15Na)*1.2,min(slope.d15Na)*0.8) )  
+plot(calcode/10,slope.d15Nb, col = dream3, ylab = expression(delta~"546 slope"),  # check the variability of the intercept   ylim = c(-35,-15),
+     ylim = c(max(slope.d15Nb)*1.2,min(slope.d15Nb)*0.8) )  
+
+     mtext("Date [DOY]",1,line=2.2, cex = 1.2)
+
+plot(calcode/10,slope.d18O, col = dream5, ylab = expression(delta~"448 slope"),  # check the variability of the intercept   ylim = c(0,60), 
+     ylim = c(max(slope.d18O)*0.8,min(slope.d18O)*1.2) )  
+
+
 dev.off()
 
 # # pdf("graphs/anchor.pdf",encoding="MacRoman",height=6,width=12,family="Times",fonts="Times")   
@@ -123,7 +133,7 @@ dev.off()
 # ANCHOR (ETHZSAEHIGH-1) & SPAN (ETHZSAEHIGH-7) TARGET CHECK
 
 pdf("graphs/fig2_anchor-span.pdf",encoding="WinAnsi", height=6,width=12,family="Times",fonts="Times")  # ,encoding="MacRoman"
-par(mfrow=c(3,1),bg="white",pch=16,tcl=0.3,cex=1,las=0,srt=0,cex.lab=1,xpd=F)
+par(mfrow=c(4,1),bg="white",pch=16,tcl=0.3,cex=1,las=0,srt=0,cex.lab=1,xpd=F)
 par(omi = c(0.75,0,0.25,0.25)) # graph margin
 par(mai = c(0,1,0,0))  # plot margin
 
@@ -132,8 +142,8 @@ par(mai = c(0,1,0,0))  # plot margin
 x.time  <- na.omit(unique(QCL.DATA$DOY[SPAN]))
 
 # d15Na
-plot(x.time,tapply(QCL.DATA$d15Na.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", ylim=c(32,38),
-     ylab= expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
+plot(x.time,tapply(QCL.DATA$d15Na.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", ylim=c(32.5,38.5),
+     ylab= expression(delta~"456 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Na, col = dream2)
 rect( min(x.time-10), ETHZSAEHIGH7.d15Na-0.71 ,max(x.time+10),ETHZSAEHIGH7.d15Na+0.71, col = rgb(217,4,82, alpha = 50, maxColorValue =  255), border = F)
@@ -148,12 +158,12 @@ for (i in 1:length(x.time )){
   arrows(x.time[i], mean.d15Na[i] + sd.d15Na[i], x.time[i], mean.d15Na[i] - sd.d15Na[i],
          angle=90, code=3, length=0.03, col=kulergrey, lwd=0.4) # Fehlerbalken 
 }
-legend("topright",c("456"), cex = 1, 
-       col=c(dream2),pch=16,bty="n")
+# legend("topright",c("456"), cex = 1, 
+#        col=c(dream2),pch=16,bty="n")
 
 # d15Nb
 plot(x.time,tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", yaxt = "n", ylim=c(32,38),
-     ylab = expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
+     ylab = expression(delta~"546 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Nb, col = dream3)
 rect( min(x.time-10), ETHZSAEHIGH7.d15Nb-0.5 ,max(x.time+10),ETHZSAEHIGH7.d15Nb+0.5, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
@@ -168,12 +178,33 @@ for (i in 1:length(x.time )){
   arrows(x.time[i], mean.d15Nb[i] + sd.d15Nb[i], x.time[i], mean.d15Nb[i] - sd.d15Nb[i],
          angle=90, code=3, length=0.03, col=kulergrey, lwd=0.4) # Fehlerbalken 
 }
-legend("topright",c("546"), cex = 1, 
-       col=c(dream3),pch=16,bty="n")
+# legend("topright",c("546"), cex = 1, 
+#        col=c(dream3),pch=16,bty="n")
+
+# SP
+QCL.DATA$SP.corr2 <- QCL.DATA$d15Na.corr2 - QCL.DATA$d15Nb.corr2
+plot(x.time,tapply(QCL.DATA$SP.corr2[SPAN],QCL.DATA$DOY[SPAN],mean,na.omit = TRUE),col="white",xlab="", xaxt = "n", yaxt = "n", ylim=c(-3.5,2.75),
+     ylab = expression("SP [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
+
+abline(h = ETHZSAEHIGH7.d15Na - ETHZSAEHIGH7.d15Nb, col = "green")
+rect( min(x.time-10), ETHZSAEHIGH7.d15Nb-0.5 ,max(x.time+10),ETHZSAEHIGH7.d15Nb+0.5, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
+axis(2, at = seq(-3,2,1))
+
+sd.d15Nb   = tapply(QCL.DATA$SP.corr2[SPAN],QCL.DATA$DOY[SPAN],sd)
+mean.d15Nb = tapply(QCL.DATA$SP.corr2[SPAN],QCL.DATA$DOY[SPAN],mean)
+
+points(x.time ,mean.d15Nb,col="green")
+
+for (i in 1:length(x.time )){
+  arrows(x.time[i], mean.d15Nb[i] + sd.d15Nb[i], x.time[i], mean.d15Nb[i] - sd.d15Nb[i],
+         angle=90, code=3, length=0.03, col="grey50", lwd=0.4) # Fehlerbalken 
+}
+# legend("topright",c("546"), cex = 1, 
+#        col=c(dream3),pch=16,bty="n")
 
 # d18O
-plot(x.time,tapply(QCL.DATA$d18O.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab='time [DOY]',  ylim=c(32,40),
-     ylab= expression(delta^15~"N [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
+plot(x.time,tapply(QCL.DATA$d18O.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab='time [DOY]',  ylim=c(31,43),
+     ylab= expression(delta~"448 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d18O, col = dream5)
 rect( min(x.time-10), ETHZSAEHIGH7.d18O-0.35 ,max(x.time+10),ETHZSAEHIGH7.d18O+0.35, col = rgb(217,130,54, alpha = 50, maxColorValue =  255), border = F)
@@ -187,10 +218,10 @@ for (i in 1:length(x.time )){
   arrows(x.time[i], mean.d18O[i] + sd.d18O[i], x.time[i], mean.d18O[i] - sd.d18O[i],
          angle=90, code=3, length=0.03, col="grey50", lwd=0.4) # Fehlerbalken 
 }
-legend("topright",c("448"), cex = 1, 
-       col=c(dream5),pch=16,bty="n")
+# legend("topright",c("448"), cex = 1, 
+#        col=c(dream5),pch=16,bty="n")
 
-mtext("date [DOY]",1,line=2.5, cex = 1.2)
+mtext("Date [DOY]",1,line=2.5, cex = 1.2)
 
 dev.off()
 

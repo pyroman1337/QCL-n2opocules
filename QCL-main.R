@@ -19,7 +19,7 @@ library(plotly)
   lct <- Sys.getlocale("LC_TIME"); Sys.setlocale("LC_TIME", "C")      # sets time settings to english (no confusion with local settings)
   
 data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder for QCL rawdata (containing .stc and .str files)
-# data.folder <- "/home/hueppir/DATA-QCL/"  # set data folder for QCL rawdata (containing .stc and .str files)
+# data.folder <- "data/2015-11_2016_01/" # "/home/hueppir/DATA-QCL/"  # set data folder for QCL rawdata (containing .stc and .str files)
 
 # kulergrey   <- rgb(64,55,47, maxColorValue =  255) # remaining example of kuler colours
 
@@ -84,10 +84,10 @@ data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder fo
     
 #  Reads in all QCL *.stc files
 #  ==============================================================================================================================================================================================================================================        
-          QCL.stc     <- fread(paste0(data.folder,filename.stc[1]),skip=1,fill=TRUE)
+          QCL.stc     <- fread(paste0(data.folder,filename.stc[1]),skip=1,fill=TRUE,sep=",")
 
           for(i in seq(along=filename.stc)[-1]) {
-              x <- fread(paste0(data.folder,filename.stc[i]), header=T, skip=1,fill=TRUE)
+              x <- fread(paste0(data.folder,filename.stc[i]), header=T, skip=1,fill=TRUE,sep=",")
               QCL.stc <- rbind(QCL.stc, x) # appends data from new files to data frame 'QCL.stc'
               }
 
