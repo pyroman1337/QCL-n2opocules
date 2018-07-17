@@ -14,17 +14,15 @@ library(plotly)
 # GLOBAL PARAMs
 #  ==============================================================================================================================================================================================================================================
 
-  rm(list=ls())
-  Sys.setenv(TZ='UTC')
+  rm(list=ls())           # remove everything from the environment
+  Sys.setenv(TZ='UTC')    # set timezone
   lct <- Sys.getlocale("LC_TIME"); Sys.setlocale("LC_TIME", "C")      # sets time settings to english (no confusion with local settings)
   
-data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder for QCL rawdata (containing .stc and .str files)
+data.folder <-  "data/aerodyne_SAE_2015-10/"  # "data/2015-11_2016_01/"  # set data folder for QCL rawdata (containing .stc and .str files)
 # data.folder <- "data/2015-11_2016_01/" # "/home/hueppir/DATA-QCL/"  # set data folder for QCL rawdata (containing .stc and .str files)
 
-# kulergrey   <- rgb(64,55,47, maxColorValue =  255) # remaining example of kuler colours
-
 # TDL Wintel output *.stc and *.str time vector is given in seconds from 01 January 1904; that had been inherited from the IGOR programming language 
-# species 1-5 are measured by Laser 1 (2188 cm-1)
+# species  1-5 are measured by Laser 1 (2188 cm-1)
 # species 6-11 are measured by Laser 2 (2202 cm-1)        
   
 
@@ -32,7 +30,7 @@ data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder fo
  AIR.N2 <- 0.0036782 # Isotope ratio of AIR-N2 from Werner & Brandt 2001
  V.SMOW <- 0.0020052 # Isotope ratio of V-SMOW from Werner & Brandt 2001
 
-# SAE ETH Lab standards
+# SAE ETH Lab standards input
  ETHZSAEHIGH1.d15Na <-  0.00 #plusminus 0.32
  ETHZSAEHIGH1.d15Nb <-  2.16 #plusminus 0.33
  ETHZSAEHIGH1.d18O  <- 38.98 #plusminus 0.33
@@ -41,20 +39,9 @@ data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder fo
  ETHZSAEHIGH7.d15Nb <- 35.98 #plusminus 0.50
  ETHZSAEHIGH7.d18O  <- 37.99 #plusminus 0.35
 
-
- ETHZSAEHIGH1.R456  <- (ETHZSAEHIGH1.d15Na/1000 + 1) * AIR.N2 #conversion from d-value to ratio
- ETHZSAEHIGH1.R546  <- (ETHZSAEHIGH1.d15Nb/1000 + 1) * AIR.N2 #conversion from d-value to ratio
- ETHZSAEHIGH1.R448  <- (ETHZSAEHIGH1.d18O/ 1000 + 1) * V.SMOW #conversion from d-value to ratio
-
-
-#  Reads in temperature data, obtained from Rscript 'ibutton.R'
-#  ==============================================================================================================================================================================================================================================      
-
-#TEMPERATURE <- read.table("/Users/mbarthel/Desktop/QCL1/data/GH-temperature-mod.txt",sep=",")
-#TEMPERATURE$TIMESTAMP  <-  as.POSIXct(strptime(TEMPERATURE$TIMESTAMP,format="%Y-%m-%d %H:%M:%S",tz="UTC"))
-
-#SUBSET        <- TEMPERATURE$TIMESTAMP > as.POSIXct("2015-09-15 00:00:00, tz=UTC") &  TEMPERATURE$TIMESTAMP < as.POSIXct("2016-01-25 23:59:59, tz=UTC") 
-#TEMPERATURE   <- TEMPERATURE[SUBSET,]
+ ETHZSAEHIGH1.R456  <- (ETHZSAEHIGH1.d15Na/1000 + 1) * AIR.N2 #conversion from delta-value to ratio
+ ETHZSAEHIGH1.R546  <- (ETHZSAEHIGH1.d15Nb/1000 + 1) * AIR.N2 #conversion from delta-value to ratio
+ ETHZSAEHIGH1.R448  <- (ETHZSAEHIGH1.d18O/ 1000 + 1) * V.SMOW #conversion from delta-value to ratio
 
 
 #  Reads in all QCL *.str files
@@ -64,26 +51,26 @@ data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder fo
 #  the single headers line in the *.str files starts with time stream file was openend in four different formats: (1) local time as timestamp (2) local time in seconds since preceding midnight (3) local time in IGOR time, ie seconds since 1904 (4) UTC time
 
 
- filename.str                   <-  list.files(path = data.folder, pattern="*.str")   # relative Data path from package
+ filename.str                   <-  list.files(path = data.folder, pattern="*.str")   # relative Data path from working directory
 
-      STR     <- fread(paste0(data.folder,filename.str[1]),skip=1,fill=TRUE)
+      STR     <- fread(paste0(data.folder,filename.str[1]),skip=1,fill=TRUE)          # fread function for fast data scanning
       
       for(i in seq(along=filename.str)[-1]) {
         x <- fread(paste0(data.folder,filename.str[i]), header=F, skip=1,fill=TRUE)
         STR <- rbind(STR, x) # appends data from new files to data frame 'QCL.stc'
       }
       
-      names(STR) <-  c("time","spec.546a","spec.456a","spec.446a","spec.h2oa","spec.co2a","spec.448a","spec.n2o","spec.446b","spec.co2b","spec.CO","spec.h2ob")      
+      names(STR) <-  c("time","spec.546a","spec.456a","spec.446a","spec.h2oa","spec.co2a","spec.448a","spec.n2o",
+                       "spec.446b","spec.co2b","spec.CO","spec.h2ob")      
       
-      STR$TIMESTAMP    <- as_datetime(STR$time, origin = "1904-01-01 UTC")
+      STR$TIMESTAMP    <- as_datetime(STR$time, origin = "1904-01-01 UTC")  # convert to correct date-time format
                   
-#  Reads in all QCL *.stc files and creates a subset data frame
+      
+#  Reads in all QCL *.stc files
 #  ==============================================================================================================================================================================================================================================      
 
  filename.stc                   <-  list.files(path = data.folder ,pattern="*.stc") # relative Data path from package
     
-#  Reads in all QCL *.stc files
-#  ==============================================================================================================================================================================================================================================        
           QCL.stc     <- fread(paste0(data.folder,filename.stc[1]),skip=1,fill=TRUE,sep=",")
 
           for(i in seq(along=filename.stc)[-1]) {
@@ -107,11 +94,8 @@ data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder fo
         QCL  <- merge(STC,STR        ,by ="TIMESTAMP",all=TRUE, sort=TRUE, incomparables=TRUE)
         
         QCL.backup <- QCL
-        # rm(TEMPERATURE)
-        # rm(STR)
-        # rm(STC)
-        # rm(FOO)
-        # rm(TEMPERATURE,STR,STC,F00,QCL.stc)
+
+        rm(STR,STC,QCL.stc)  # get some space
         
    
   # Aggregate the Data in flexible integration time (ideally suggested by the lowest Allan variance)
@@ -129,7 +113,7 @@ data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder fo
       
        
         
-  # IMPLEMENT TIME VECTORS
+  # Implement time vectors
   #  ===========================================================================================================================================================================================================
     
         QCL$DOY            <-  as.numeric(format(QCL$TIMESTAMP,format="%j"))
@@ -145,25 +129,25 @@ data.folder <-  "data/2015-10/"  # "data/2015-11_2016_01/"  # set data folder fo
         QCL$hourinseconds  <-  as.numeric(format(QCL$TIMESTAMP,format= "%M"))*60 + as.numeric(format(QCL$TIMESTAMP,format="%S"))
         QCL$hourinminutes  <-  as.numeric(format(QCL$TIMESTAMP,format= "%M")) 
         
-        QCL$timecode       <-  as.numeric(paste(QCL$DOY,QCL$hour,sep = ""))
+        QCL$timecode       <-  as.numeric(paste(QCL$DOY,QCL$hour,sep = ""))  # timecode is Day of the Year (DOY) and the hour (4 digits)
 
         QCL$ampm           <-  format(QCL$TIMESTAMP,format="%p") # AM/PM indicator
         QCL$ampmnumeric    <-  numeric(length(QCL[,TIMESTAMP]))
         QCL$ampmnumeric[QCL$ampm == "PM"] =  1
-        QCL$calcode        <-  as.numeric(paste(QCL$DOY,QCL$ampmnumeric,sep=""))
+        QCL$calcode        <-  as.numeric(paste(QCL$DOY,QCL$ampmnumeric,sep=""))  # calcode is DOY and AM(0) or PM(1)
 
         QCL$VICI  <- QCL$VICI_W + 1 # TDL Wintel is writing VICI multivalve positions from 0 to 15, however, in software used valve numbers are from # 1 to 16        
-        QCL$N     <- !is.na(QCL$spec.446a)  # CREATE LOGICAL VECTOR TO KNOW n of array after aggregation          
+        # QCL$N     <- !is.na(QCL$spec.446a)  # Lenth of vector n of array after aggregation          
 
         
-   #  Create Selections and Filter from the complete dataset 
-   #  ===========================================================================================================================================================================================================
-        
+#  Create Selections and Filter from the complete dataset 
+#  ===========================================================================================================================================================================================================
+        # Remove NA values (and certain outlieres below)
         NA.RM.1  <- !is.na(QCL$calcode) & !is.na(QCL$spec.446a) & # !is.na(QCL$spec.546a) & !is.na(QCL$spec.456a) & #  & !is.na(QCL$d15Na)    & !is.na(QCL$d15Nb) & !is.na(QCL$d18O) &
           QCL$calcode != c(2740) & QCL$calcode != 2750 # take out certain dates where the dilution cal didn't work
         
         
-        # OFFSET CORRECTION USING ETHZSAEHIGH1 at VICI port #3
+        # Offset correction using ETHZSAEHIGH1 at VICI port #3
         OFFSET <- NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 3 |  # last minute of cal cycle at VICI#3 before dilution starts, 
           NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 15
         
@@ -181,8 +165,7 @@ QCL$d15Nb <- (QCL$R546 / AIR.N2 - 1) * 1000  # referenced against AIR-N2
 QCL$d18O  <- (QCL$R448 / V.SMOW - 1) * 1000  # referenced against V-SMOW
 
 
-# Parameter diagnostics
-
+# Parameter diagnostics ---------------------------------------------------
 # QCL.backup    <- QCL
 # QCL   <-  QCL.bkp
 # head(QCL)
@@ -267,7 +250,7 @@ QCL     <- QCL.bkp   %>% filter(ampmnumeric == 1 )
 # 
 # 
 
-# Parameter corrections
+# Parameter corrections (not applied)
 # =======================================================================================================================================================================
 # ## Tcell correction on 456
 # QCL[OFFSET,d15Na.orig := d15Na]
@@ -283,10 +266,9 @@ QCL     <- QCL.bkp   %>% filter(ampmnumeric == 1 )
 # QCL[OFFSET,d18O := d18O.orig - (spec.co2b- mean(spec.co2b)) * coef(lm(d18O.orig ~ spec.co2b))[2]]
 
 
-# bluk and SP
+# calculate bluk and SP
 QCL$bulk  <- (QCL$d15Na + QCL$d15Nb) / 2         # bulk 15N is the average of alpha and beta
 QCL$SP    <-  QCL$d15Na - QCL$d15Nb              # calculate site preference value
-
 
 
 
@@ -309,19 +291,17 @@ diff.d18O  <- ((ETHZSAEHIGH1.d18O  - QCLETHZSAEHIGH1.d18O) /(QCLETHZSAEHIGH1.d18
 
 
 
-# CALIBRATION CALCULATION AND EQUATIONs
+# Calibration Calculation and Equations
 # =======================================================================================================================================================================
 
 # DILUTION CORRECTION USING ETHZSAEHIGH1 at VICI port #3
 
- # PERIODS USEABLE FOR CORRECTION
+ # Select time periods useable for dilution correction
  # VICI #3 ETHZSAEHIGH-1
 
      DILUTION <- NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 310 & QCL$hour == 3 | 
                 NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 310 & QCL$hour == 15
 
-
-    # library(nlme)   # package for function lmList
     QCL.DILUTION.SUBSET          <-      subset(QCL[DILUTION,], select=c("calcode","spec.446a","d15Na","d15Nb","d18O","Tcell","spec.h2oa","Pcell"))
     # DILUTION fit parameters  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
 
@@ -333,7 +313,6 @@ diff.d18O  <- ((ETHZSAEHIGH1.d18O  - QCLETHZSAEHIGH1.d18O) /(QCLETHZSAEHIGH1.d18
     # mean.h2o             <- QCL.DILUTION.SUBSET[,mean(spec.h2oa),calcode]
     # mean.Tcell           <- QCL.DILUTION.SUBSET[,mean(Tcell),calcode]
     # mean.Pcell           <- QCL.DILUTION.SUBSET[,mean(Pcell),calcode]
-    
     
     # d15Na
     R2.d15Na             <-      summary(fit.d15Na)$r.squared
@@ -347,14 +326,12 @@ diff.d18O  <- ((ETHZSAEHIGH1.d18O  - QCLETHZSAEHIGH1.d18O) /(QCLETHZSAEHIGH1.d18
     offset.d15Nb         <-      coef(fit.d15Nb)[,1]
     slope.d15Nb          <-      coef(fit.d15Nb)[,2]
 
-
     # d18O
     R2.d18O             <-      summary(fit.d18O)$r.squared
     df.d18O             <-      summary(fit.d18O)$df[,2]
     offset.d18O         <-      coef(fit.d18O)[,1]
     slope.d18O          <-      coef(fit.d18O)[,2]
   
-
 
     calcode                <- tapply(QCL$calcode[DILUTION],QCL$calcode[DILUTION],mean,na.rm=TRUE) 
 
@@ -363,23 +340,20 @@ diff.d18O  <- ((ETHZSAEHIGH1.d18O  - QCLETHZSAEHIGH1.d18O) /(QCLETHZSAEHIGH1.d18
                               diff.d18O,R2.d18O,df.d18O,offset.d18O,slope.d18O)
 
 
-
 QCL.DATA    <-    merge(QCL,CALIBRATION     ,by="calcode",all=TRUE, sort=FALSE, incomparables=NA)
 QCL.DATA    <-    QCL.DATA[order(QCL.DATA$TIMESTAMP),] # reorder data.frame as merge in previous line fails to sort correctly 
 
 
-
-# APPLYING CORRECTIONS
+# Applying corrections ----------------------------------------------------
 
 # OFFSET CORRECTION
 QCL.DATA$d15Na.corr1 <- QCL.DATA$d15Na + QCL.DATA$diff.d15Na + (QCL.DATA$d15Na * QCL.DATA$diff.d15Na * 0.001)
 QCL.DATA$d15Nb.corr1 <- QCL.DATA$d15Nb + QCL.DATA$diff.d15Nb + (QCL.DATA$d15Nb * QCL.DATA$diff.d15Nb * 0.001)
 QCL.DATA$d18O.corr1  <- QCL.DATA$d18O  + QCL.DATA$diff.d18O  + (QCL.DATA$d18O  * QCL.DATA$diff.d18O  * 0.001)
 
-
 # DILUTION CORRECTION
 # based on the below assessed linear function with *.corr2 from the dilution calibration the data is corrected for with y2 = m(x2-x1) + y1 from m = (y2 - y1) / (x2 - x1)
- QCLETHZSAEHIGH1.446 # equals true concentration of tank for which values are corrected for
+ # QCLETHZSAEHIGH1.446 # equals true concentration of tank for which values are corrected for
 
 #dilution correction    = Anstieg von corr2 * concentration tank       - momentane conc   +  gemessene delta.corr1
  QCL.DATA$d15Na.corr2       <- QCL.DATA$slope.d15Na * (QCL.DATA$QCLETHZSAEHIGH1.446 - QCL.DATA$spec.446a)  +  QCL.DATA$d15Na.corr1
@@ -391,10 +365,9 @@ QCL.DATA$d18O.corr1  <- QCL.DATA$d18O  + QCL.DATA$diff.d18O  + (QCL.DATA$d18O  *
  # plot(calcode,offset.d15Nb, ylim = c(-32,-20))  # check the variability of the intercept
  # plot(mean.Tcell$V1 , offset.d15Nb, ylim= c(-30,-20))   # is there a temperature dependency?
  # plot(mean.Tcell$V1 , slope.d15Nb, ylim= c(0,0.02))   # is there a temperature dependency?
-# sd(offset.d15Nb)  # 1 sec => 1.578 ;   1.382   for 10 sec time integration; 30 sec => 2.006       ; 
+ # sd(offset.d15Nb)  # 1 sec => 1.578 ;   1.382   for 10 sec time integration; 30 sec => 2.006       ; 
  # sd(slope.d15Nb)   # 1 sec => 0.001211; 0.001303 for 10 sec time integration 30 sec => 0.001822    ; 
  
-
 
 # CHAMBER VOLUME CALCULATIONS
 
@@ -439,7 +412,7 @@ QCL.DATA$ch.volumes <- ch.volumes
 
 
 # ===============================================================================================================================================================================================================================================
-# FLUX CALCULATIONS (linear regression)
+# FLUX CALCULATION (by linear regression)
 NA.RM.3  <-  !is.na(QCL.DATA$spec.446a) & !is.na(QCL.DATA$VICI)
 
 # QCL.DATA$N2O.nmol[NA.RM.3 & QCL.DATA$VICI == 5]       <- 1.00035 * QCL.DATA$spec.446a[NA.RM.3 & QCL.DATA$VICI == 5]  / (0.08206 * (273.15 + QCL.DATA$temp_C1_mod[NA.RM.3 & QCL.DATA$VICI  == 5]))  # nmol/L
@@ -492,8 +465,6 @@ KEELING <- NA.RM.4 &
 
 KEELING <- as.vector(KEELING)
 
-# library(nlme)   # package for function lmList  moved to top
-
     DATA.KEELING.SUBSET      <-      na.omit(subset(QCL.DATA[KEELING,], select=c("hourinseconds","VICI.time","N2O.nmol","CO2.nmol","spec.446a.inv","d15Na.corr2","d15Nb.corr2","d18O.corr2")))
    
     # DILUTION fit parameters  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
@@ -540,12 +511,9 @@ FLUX.CO2    <- NA.RM.4 &
 FLUX.N2O    <- as.vector(FLUX.N2O)
 FLUX.CO2    <- as.vector(FLUX.CO2)
 
-# library(nlme)   # package for function lmList  -> moved to top
-
     DATA.FLUX.SUBSET.N2O      <-      na.omit(subset(QCL.DATA[FLUX.N2O,], select=c("hourinseconds","VICI.time","N2O.nmol","CO2.nmol","spec.446a.inv","d15Na.corr2","d15Nb.corr2","d18O.corr2","spec.446a")))
     DATA.FLUX.SUBSET.CO2      <-      na.omit(subset(QCL.DATA[FLUX.CO2,], select=c("hourinseconds","VICI.time","N2O.nmol","CO2.nmol","spec.446a.inv","d15Na.corr2","d15Nb.corr2","d18O.corr2","spec.446a")))
         
-    
     # CO2 Flux calculation
     co2.flux.regression      <-      lmList(CO2.nmol ~ hourinseconds | VICI.time,data = DATA.FLUX.SUBSET.CO2)
     co2.R2                   <-      summary(co2.flux.regression)$r.squared
