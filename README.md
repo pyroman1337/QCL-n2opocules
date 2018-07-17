@@ -20,4 +20,4 @@ The sample dataset available is from a greenhouse plant variety experiment using
 
 no accepted publications yet
 
-visite www.sae.ethz.ch
+visit www.sae.ethz.ch

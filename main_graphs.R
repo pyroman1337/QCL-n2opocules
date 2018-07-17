@@ -15,8 +15,8 @@ kulergrey   = rgb(64,55,47, maxColorValue =  255)
 kulerorange = rgb(217,86,28, maxColorValue = 255)
 
 dream1      = rgb(64,1,13, maxColorValue =   255)
-dream2      = rgb(217,4,82, maxColorValue =  255)
-dream3      = rgb(140,131,3, maxColorValue = 255)
+dream2      = rgb(217,4,82, maxColorValue =  255)  # d456, 15Nalpha colour
+dream3      = rgb(140,131,3, maxColorValue = 255)  # d546, 15Nbeta colour
 dream4      = rgb(89,43,2, maxColorValue =   255)
 dream5      = rgb(217,130,54, maxColorValue =255)
 
@@ -35,7 +35,7 @@ OFFSET <- NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds
   NA.RM.1 & QCL$VICI == 3 & QCL$hourinseconds > 250 &  QCL$hourinseconds < 310 & QCL$hour == 15
 
 #selection vectors
-SPAN   <- QCL.DATA$VICI == 4 & QCL.DATA$hourinseconds > 480 & QCL.DATA$TIMESTAMP > as.POSIXct("2015-09-30 00:00:00, tz=UTC")  # 2015-12-05 is the actual starting date
+SPAN   <- QCL.DATA$VICI == 4 & QCL.DATA$hourinseconds > 480 & QCL.DATA$TIMESTAMP > as.POSIXct("2015-09-30 00:00:00, tz=UTC")  & QCL.DATA$hour == 15  # 2015-12-05 is the actual starting date
 ANCHOR <- NA.RM.1 & QCL.DATA$VICI == 3 & QCL.DATA$hourinseconds > 250 &  QCL.DATA$hourinseconds < 310 & QCL.DATA$hour == 3  |  # & QCL.DATA$TIMESTAMP > as.POSIXct("2015-12-05 00:00:00, tz=UTC") |  # last minute of cal cycle at VICI#3 before dilution starts, 
           NA.RM.1 & QCL.DATA$VICI == 3 & QCL.DATA$hourinseconds > 250 &  QCL.DATA$hourinseconds < 310 & QCL.DATA$hour == 15  # & QCL.DATA$TIMESTAMP > as.POSIXct("2015-12-05 00:00:00, tz=UTC")
 
@@ -142,7 +142,7 @@ par(mai = c(0,1,0,0))  # plot margin
 x.time  <- na.omit(unique(QCL.DATA$DOY[SPAN]))
 
 # d15Na
-plot(x.time,tapply(QCL.DATA$d15Na.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", ylim=c(32.5,38.5),
+plot(x.time,tapply(QCL.DATA$d15Na.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", ylim=c(33,37),
      ylab= expression(delta~"456 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Na, col = dream2)
@@ -162,7 +162,7 @@ for (i in 1:length(x.time )){
 #        col=c(dream2),pch=16,bty="n")
 
 # d15Nb
-plot(x.time,tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", yaxt = "n", ylim=c(32,38),
+plot(x.time,tapply(QCL.DATA$d15Nb.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab="", xaxt = "n", yaxt = "n", ylim=c(34,37),
      ylab = expression(delta~"546 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Nb, col = dream3)
@@ -183,11 +183,12 @@ for (i in 1:length(x.time )){
 
 # SP
 QCL.DATA$SP.corr2 <- QCL.DATA$d15Na.corr2 - QCL.DATA$d15Nb.corr2
-plot(x.time,tapply(QCL.DATA$SP.corr2[SPAN],QCL.DATA$DOY[SPAN],mean,na.omit = TRUE),col="white",xlab="", xaxt = "n", yaxt = "n", ylim=c(-3.5,2.75),
+plot(x.time,tapply(QCL.DATA$SP.corr2[SPAN],QCL.DATA$DOY[SPAN],mean,na.omit = TRUE),col="white",xlab="", xaxt = "n", yaxt = "n", ylim=c(-3.3,2.5),
      ylab = expression("SP [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d15Na - ETHZSAEHIGH7.d15Nb, col = "green")
-rect( min(x.time-10), ETHZSAEHIGH7.d15Nb-0.5 ,max(x.time+10),ETHZSAEHIGH7.d15Nb+0.5, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
+rect( min(x.time-10), ETHZSAEHIGH7.d15Na - ETHZSAEHIGH7.d15Nb - (0.5+0.71)  ,max(x.time+10),ETHZSAEHIGH7.d15Na - ETHZSAEHIGH7.d15Nb + (0.5+0.71), 
+      col = rgb(10,210,10, alpha = 50, maxColorValue =  255), border = F)
 axis(2, at = seq(-3,2,1))
 
 sd.d15Nb   = tapply(QCL.DATA$SP.corr2[SPAN],QCL.DATA$DOY[SPAN],sd)
@@ -203,7 +204,7 @@ for (i in 1:length(x.time )){
 #        col=c(dream3),pch=16,bty="n")
 
 # d18O
-plot(x.time,tapply(QCL.DATA$d18O.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab='time [DOY]',  ylim=c(31,43),
+plot(x.time,tapply(QCL.DATA$d18O.corr2[SPAN],QCL.DATA$DOY[SPAN],mean),col="white",xlab='time [DOY]',  ylim=c(31,41),
      ylab= expression(delta~"448 [\u2030]")) #  sorry, this is different on other plattforms, i.e. \211 for windows?!
 
 abline(h = ETHZSAEHIGH7.d18O, col = dream5)
@@ -389,11 +390,11 @@ plot(n2o.flux,coef(keeling.d15Na)[,1],
      # ylab=expression(delta~"[per mille]"),
      cex=.5,xlim=c(0,1.1),ylim=c(-1000,1000),col=dream2)
 # rect( 0, -50 ,1.1, 50, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
-legend("topright",c("456"),
+legend("topright",expression(" "^15~"N"^alpha),
        col=c(dream2),pch=16,bty="n")
 abline(h=0)
 
-mtext(side = 2, expression(delta^15~"N [\u2030]"), 2.5)
+mtext(side = 2, expression(delta*" [\u2030]"), 2.5)
 
 
 plot(n2o.flux,coef(keeling.d15Nb)[,1],
@@ -402,7 +403,7 @@ plot(n2o.flux,coef(keeling.d15Nb)[,1],
     # ylab=expression(delta~"[per mille]"),
     cex=.5,xlim=c(0,1.1),ylim=c(-1000,1000),col=dream3)
 # rect( 0, -50 ,1.1, 50, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
-legend("topright",c("546"),
+legend("topright",expression(" "^15~"N"^beta),
        col=c(dream3),pch=16,bty="n")
 mtext(side = 1, expression("N"[2]*"O flux [nmol m"^{-2}*" s"^{-1}*"]"), 2.5)
 
@@ -414,7 +415,7 @@ plot(n2o.flux,coef(keeling.d18O)[,1],
      # ylab=expression(delta~"[per mille]"),
      cex=.5,xlim=c(0,1.1),ylim=c(-1000,1000),col=dream5)
 # rect( 0, -50 ,1.1, 50, col = rgb(140,131,3, alpha = 50, maxColorValue =  255), border = F)
-legend("topright",c("448"),
+legend("topright",expression(" "^18~"O"),
        col=c(dream5),pch=16,bty="n")
 # mtext(side = 2, expression(delta~"[\u2030]"), 2)
 

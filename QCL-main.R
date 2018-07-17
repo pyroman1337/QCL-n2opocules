@@ -186,19 +186,34 @@ QCL$d18O  <- (QCL$R448 / V.SMOW - 1) * 1000  # referenced against V-SMOW
 # QCL.backup    <- QCL
 # QCL   <-  QCL.bkp
 # head(QCL)
-# cor(QCL[,3:15])
-
-
-# qcl.filter <- QCL %>%  filter(OFFSET)    # %>%  filter(ampmnumeric == 0 )
+# # cor(QCL[,3:15])
+# QCL.DATA$d15Na.corr2       <- QCL.DATA$slope.d15Na * (QCL.DATA$QCLETHZSAEHIGH1.446 - QCL.DATA$spec.446a)  +  QCL.DATA$d15Na.corr1
+# QCL.DATA$d15Nb.corr2       <- QCL.DATA$slope.d15Nb * (QCL.DATA$QCLETHZSAEHIGH1.446 - QCL.DATA$spec.446a)  +  QCL.DATA$d15Nb.corr1
+# QCL.DATA$d18O.corr2        <- QCL.DATA$slope.d18O  * (QCL.DATA$QCLETHZSAEHIGH1.446 - QCL.DATA$spec.446a)  +  QCL.DATA$d18O.corr1
 # 
-# var.x <- qcl.filter$Tlaser1
-# var.y <- qcl.filter$d15Nb
+# QCL.DATA[VICI == 2]
+# 
+# qcl.filter <- QCL.DATA %>%    filter(ampmnumeric == 0 ) # %>%  filter(VICI==2)    
+# 
+# plot(qcl.filter$TIMESTAMP,qcl.filter$d15Na.corr2, col= dream2)
+# points(qcl.filter$TIMESTAMP,qcl.filter$d15Nb.corr2, col = dream3)
+# plot(qcl.filter$TIMESTAMP,qcl.filter$d15Na.corr2 - qcl.filter$d15Nb.corr2  )
+# 
+# plot(qcl.filter$TIMESTAMP,qcl.filter$d15Na, col= dream2)
+# points(qcl.filter$TIMESTAMP,qcl.filter$d15Nb, col = dream3)
+# plot(qcl.filter$TIMESTAMP,qcl.filter$d15Na - qcl.filter$d15Nb  )
+# 
+# var.x <- qcl.filter$TIMESTAMP
+# var.y <- qcl.filter$d15Na
+# d15Na <- qcl.filter$d15Na
+# d15Nb <- qcl.filter$d15Na
+# 
 # fit <-  lm(var.y ~ var.x)
-# qcl.filter %>% 
-#   plot_ly(x = ~var.x) %>% 
-#   add_markers(y = ~var.y ) %>% 
-#   add_lines(x = ~var.x, y = fitted(fit))  %>% 
-#   layout(showlegend = FALSE)
+# qcl.filter %>%
+#   plot_ly(x = ~var.x) %>%
+#   add_markers(y = ~SP ) %>%
+#    add_lines(x = ~var.x, y = fitted(fit))  %>%
+  # layout(showlegend = FALSE)
 
 ### sort out only day or night measurements ###
 QCL.bkp <- QCL
@@ -602,9 +617,9 @@ FLUX.CO2    <- as.vector(FLUX.CO2)
    # head(FLUXDATA)
    
    ### write results to output folder
-   # fwrite(QCL.DATA    ,"output/QCL-DATA.csv"    ,sep=",")       # write processed rawdata into output file
+   fwrite(QCL.DATA    ,"output/QCL-DATA.csv"    ,sep=",")       # write processed rawdata into output file
    # 
-   # fwrite(FLUXDATA,"output/FLUXDATA.csv",sep=",")               # write calculated fluxes into output file
+   fwrite(FLUXDATA,"output/FLUXDATA.csv",sep=",")               # write calculated fluxes into output file
    # 
    # fwrite(KEELING.RES,"output/KEELING-RESULTS.csv",sep=",")     # write keeling plot results
     
